@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   animate,
   motion,
@@ -10,60 +10,98 @@ import {
   useReducedMotion,
 } from "motion/react";
 
-import { useMediaQuery } from "@/components/ui/use-media-query";
-
 /*
  * Hero growth chart.
  *
- * Geometry is measured off the Frame 1 export (1440 wide). The card occupies
- * x 254-1186, y 714-1310, so the viewBox below is that card's own 932 x 596 box
- * with every coordinate relative to its top-left corner.
+ * Marks, colours and proportions are the Figma's (node 332:13462, a 646 x 550
+ * box holding a 581 x 425 plot): one orange curve, six dashed gridlines, no axis
+ * rules, no area fill, two labelled dots on the line and a concentric target dot
+ * with a pill beside it. The design has no card behind any of it, so this draws
+ * straight onto the hero's dot grid.
  *
- * The curve is a live <path> rather than an exported raster because the reveal
- * is driven by pathLength and the marker rides it via a sampled lookup.
+ * Geometry is PARAMETRIC, not a transcribed viewBox. The chart is the hero's
+ * whole point and the hero is one fixed screen, so the space it gets is whatever
+ * the copy above leaves: wide and short on a laptop, tall and narrow on a phone.
+ * A fixed viewBox can only match one of those, and against the rest
+ * preserveAspectRatio scales the whole drawing down and centres it, which is
+ * what used to leave the chart floating small in the middle of a wide box. So
+ * the box is MEASURED and every coordinate is derived from it. Inside the aspect
+ * clamp below, one user unit is one device px and the drawing fills its slot at
+ * any size.
  *
  * Beat order matters to the pitch:
- *   1. frame in  - axes, labels, origin
- *   2. draw      - the black curve climbs, marker riding the head, red to green
- *   3. arrive    - peak marker punches, callout springs
- *   4. reveal    - only now does the green wash rise under the curve
- *
- * The green is the payoff, so it is gated entirely behind arrival. Filling it
- * progressively made the outcome visible before the story earned it.
+ *   1. frame in  - gridlines wipe out from the left, axis copy rises
+ *   2. draw      - the orange curve climbs, marker riding the head
+ *   3. pass      - each labelled dot pops as the marker sweeps past it
+ *   4. arrive    - the target dot's three rings land, the pill springs in
  */
 
-const CURVE = "M 163 453 C 450 456, 640 380, 739 134";
-const BASELINE = 506;
-
-const INK = "#101010";
-const START = "#e5484d";
-const END = "#2f9e68";
-
-const X0 = 163;
-const X1 = 739;
-const SAMPLES = 260;
+/* Figma: stroke #FF884D. Mirrored as --color-orange in globals.css. */
+const ORANGE = "#ff884d";
+/* Figma: the callout pill's #FFF3ED fill. */
+const ORANGE_TINT = "#fff3ed";
+/* Figma: gridlines #F2F2F2. */
+const GRID = "#f2f2f2";
+/* Figma: label ink #090A15, set at 70% for the non-accent spans. */
+const INK = "#090a15";
 
 /*
- * Milestones sit ON the curve and pop as the line passes them, which turns a
- * single sweep into a story with beats. Points were solved off the cubic above
- * at t = 0.45 and t = 0.75.
+ * The curve, as control points normalised into the plot box: u runs left to
+ * right, v runs bottom to top.
  *
- * Both labels restate claims the page already makes ("Launch In A Week Not
- * Months", "Build Your Website with $0.00 Upfront") — nothing here invents a
- * promise the rest of the site does not.
+ * These ARE the Figma's, converted straight off its exported path
+ *
+ *   M1.279 425.913 C361.962 425.913, 582.593 269.233, 582.593 1.27902
+ *
+ * divided through by the 581.31 x 424.63 it is drawn at. Two properties of it are
+ * the design and must survive any edit here:
+ *
+ *   P0.v == P1.v   the line leaves the start EXACTLY horizontal, so it lies flat
+ *                  along the bottom for the first third and the growth has a
+ *                  "before" to be measured against
+ *   P2.u == P3.u   it arrives EXACTLY vertical, straight up into the target dot
+ *
+ * Sampled across the width, which is what makes it read as compounding rather
+ * than as a ramp: the first 42% of the width buys under 7% of the rise, and the
+ * last 10% carries 30% of it.
+ *
+ *   u  0.20  0.35  0.50  0.65  0.76  0.85  0.92  0.97  1.00
+ *   v  0.02  0.06  0.13  0.21  0.30  0.41  0.53  0.70  1.00
+ *
+ * A gentler version was tried, on the reading that the late rise was too abrupt,
+ * and it was wrong: spread evenly the line stops being an exponential and reads
+ * as a straight diagonal with a bend, which is a different claim about the
+ * product. Steep at the end is the point.
  */
-const MILESTONES = [
-  { x: 492, y: 400, label: "Live in a week" },
-  { x: 648, y: 288, label: "$0 upfront" },
+const CONTROL = [
+  { u: 0.0, v: 0.0 },
+  { u: 0.6227, v: 0.0 },
+  { u: 1.0, v: 0.369 },
+  { u: 1.0, v: 1.0 },
 ] as const;
 
-// Faint horizontal rules. They give the empty upper field structure so the
-// curve reads as a measurement rather than a drawing.
-const GRID_LINES = [190, 268, 346, 424];
+/*
+ * The two labelled dots, positioned by t along the cubic rather than by
+ * hand-solved coordinates. Solving them by hand is what the old version did, and
+ * it meant any edit to the curve silently left the dots floating off the line.
+ *
+ * These t values put them where the Figma has them: u 0.764 and u 0.968, both up
+ * on the steep section. Copy and gaps are the Figma's too, with the design's
+ * "Engement" typo fixed, and the gaps scaled off the type size below.
+ */
+const DOTS = [
+  { t: 0.53, label: "Website Live In A Week", gap: 30 },
+  { t: 0.83, label: "Audience Engagement", gap: 40 },
+] as const;
+
+/* Figma: six lines on an 85px pitch across a 425px plot. */
+const GRID_LINES = 6;
+
+const PILL_LABEL = "Your Business";
 
 const DRAW_SECONDS = 2.4;
 
-// Long enough for the red "before" state to actually land before anything moves.
+// Long enough for the empty frame to land before the line starts moving.
 const LEAD_IN = 1.3;
 
 // Entrances and settles.
@@ -71,96 +109,402 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 /*
  * The draw itself eases IN, not out. Expo-out launched fast and coasted, which
- * rushed the steep climb — the interesting part — and crawled through the flat.
+ * rushed the steep climb (the interesting part) and crawled through the flat.
  * This lingers in the flat years and accelerates into the growth.
  */
 const DRAW_EASE = [0.65, 0, 0.35, 1] as const;
 
+const SAMPLES = 260;
+
 /*
- * Colour holds red across the flat section and only turns over the climb. A
- * linear red->green ramp spent most of the journey as indeterminate brown.
+ * Aspect clamp for the measured box.
+ *
+ * The Figma draws the chart at 646 x 550, so it is very nearly square (1.175),
+ * and the plot inside it is 1.367. These bracket that. A wide range was tried
+ * first, on the theory that filling the whole slot was the goal, and it was
+ * wrong: stretched past about 1.4 the flat opening of the curve turns into a
+ * long horizontal nothing, the labels drift away from their dots, and the chart
+ * stops reading as the design's compact panel.
+ *
+ * So the box takes the slot's aspect only where that already falls in range, and
+ * otherwise sits at the nearest end and centres. It centres onto the dot grid,
+ * with no card edge to make the leftover read as dead space, which is what makes
+ * a clamp this tight affordable.
  */
-const SHIFT_START = 0.55;
+const MIN_ASPECT = 1.05;
+const MAX_ASPECT = 1.35;
+
+/*
+ * And a ceiling, because "fills the space" is not the same as "should be as large
+ * as the space allows". The Figma sets the chart at 646 wide inside a 1440 frame,
+ * a bit under half the width; on a large monitor an uncapped box just inflates
+ * the line weight and the type past the proportions the design was drawn at.
+ */
+const MAX_BOX = { w: 700, h: 620 };
+
+/*
+ * What the server and the first frame draw, before the box has been measured.
+ * The Figma's own box, so the pre-measure paint is already the right shape.
+ */
+const FALLBACK = { w: 646, h: 550 };
+
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(Math.max(v, min), max);
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// Smoothstep, so the turn eases rather than switching on a hard edge.
-const colourProgressAt = (p: number) => {
-  const t = Math.min(Math.max((p - SHIFT_START) / (1 - SHIFT_START), 0), 1);
-  return t * t * (3 - 2 * t);
-};
+type Point = { x: number; y: number };
 
-const mixHex = (from: string, to: string, t: number) => {
-  const parse = (hex: string) => [
-    parseInt(hex.slice(1, 3), 16),
-    parseInt(hex.slice(3, 5), 16),
-    parseInt(hex.slice(5, 7), 16),
-  ];
-  const [r1, g1, b1] = parse(from);
-  const [r2, g2, b2] = parse(to);
-  const c = (a: number, b: number) =>
-    Math.round(lerp(a, b, t)).toString(16).padStart(2, "0");
-  return `#${c(r1, r2)}${c(g1, g2)}${c(b1, b2)}`;
+const cubic1d = (a: number, b: number, c: number, d: number, t: number) => {
+  const s = 1 - t;
+  return s * s * s * a + 3 * s * s * t * b + 3 * s * t * t * c + t * t * t * d;
 };
 
 /*
- * Type scale for narrow viewports.
- *
- * The whole drawing is one 932-unit viewBox, so it scales uniformly with the
- * card — which means on a phone the 15-19 unit labels land under 7 device px.
- * Rather than letting the card scroll (a chart you have to drag sideways is not
- * a chart), the geometry stays fixed and only the type grows, in user units, so
- * it survives the downscale.
- *
- * 1.7 is the largest factor that still fits: at this size "TIME WITH US" spans
- * x 317-615 and the callout pill x 290-701, both inside the 932 box.
+ * Each dot's normalised u, precomputed: it depends only on CONTROL, and the type
+ * size below needs it before there are any pixel coordinates to work from.
  */
-const COMPACT_TYPE_SCALE = 1.7;
+const DOT_U = DOTS.map((d) =>
+  cubic1d(CONTROL[0].u, CONTROL[1].u, CONTROL[2].u, CONTROL[3].u, d.t),
+);
+
+/*
+ * Width of a label in multiples of the type size, as the ratio the Figma's own
+ * measurements give: its 13-character "Your Business" is 130px at 20px, so 0.5em
+ * a character. Enough to lay out a capsule and to check a label has room, which
+ * is all it is used for; SVG text cannot be measured before it is laid out.
+ */
+const EM_PER_CHAR = 0.5;
+
+const pointOnCubic = (p: readonly Point[], t: number): Point => {
+  const s = 1 - t;
+  const b0 = s * s * s;
+  const b1 = 3 * s * s * t;
+  const b2 = 3 * s * t * t;
+  const b3 = t * t * t;
+  return {
+    x: b0 * p[0].x + b1 * p[1].x + b2 * p[2].x + b3 * p[3].x,
+    y: b0 * p[0].y + b1 * p[1].y + b2 * p[2].y + b3 * p[3].y,
+  };
+};
+
+/*
+ * Everything the drawing needs, derived from the box it has to fill.
+ *
+ * The insets are the Figma's proportions (it reserves 65 of 646 on the right for
+ * the rotated y label and 64 of 550 at the bottom for the x label) with px
+ * floors and ceilings, so the labels still have room in a small box and the plot
+ * does not lose half a wide one to margin.
+ */
+function buildLayout(w: number, h: number) {
+  const padR = clamp(w * 0.1, 44, 78);
+  const padB = clamp(h * 0.116, 40, 68);
+  // The Figma's curve starts at x = 0 exactly; 2px is the round cap's overhang.
+  const padL = 2;
+
+  const x0 = padL;
+  const x1 = w - padR;
+  const pw = Math.max(x1 - x0, 1);
+
+  /*
+   * Figma sets its labels at 20px inside a 646-wide box. Held to that ratio, and
+   * floored so a phone stays legible and capped so a wide desktop does not
+   * balloon. These are literal device px: the viewBox IS the measured box.
+   *
+   * Then capped again by whether the longest dot label actually fits between the
+   * plot's left edge and its own dot. On a narrow box that constraint binds first
+   * (a 320px-wide phone is the case that found it), and the alternative is a
+   * label running off the side of the chart. Solved rather than clipped, because
+   * every term in it is a known multiple of the type size:
+   *
+   *   u * pw  >=  dotR + gap + labelWidth,  all three linear in `type`
+   */
+  const labelLimit = Math.min(
+    ...DOTS.map(
+      (d, i) =>
+        (DOT_U[i] * pw) /
+        (0.4477 + d.gap / 20 + d.label.length * EM_PER_CHAR),
+    ),
+  );
+  const type = Math.max(Math.min(clamp((20 * w) / 646, 13, 21), labelLimit), 10);
+
+  /* Figma: mid dots r 8.95312 against 20px type. */
+  const dotR = type * 0.4477;
+
+  /*
+   * Figma's target dot is three stacked discs, r 25.5805 / 19.1853 / 12.7902 at
+   * 20px type, at 30% / 50% / full opacity.
+   */
+  const targetR = type * 1.279;
+  const targetMidR = type * 0.9593;
+  const targetInnerR = type * 0.6395;
+
+  /*
+   * The top inset has to clear the target dot, which straddles the plot's top
+   * edge, and the pill beside it, which is centred on the same line. Figma's own
+   * value is 61 of 550 (11.1%), and the max() is what keeps the outer disc inside
+   * the box when the proportion alone would not: the disc scales with the type,
+   * the inset with the box height, and on a short box the type wins.
+   *
+   * Computed after `type` for that reason, which is why it is not up with padR
+   * and padB.
+   */
+  const padT = Math.max(h * 0.111, targetR + type * 0.4);
+
+  const y0 = padT;
+  const y1 = h - padB;
+  const ph = Math.max(y1 - y0, 1);
+
+  const at = (u: number, v: number): Point => ({
+    x: x0 + u * pw,
+    y: y1 - v * ph,
+  });
+
+  const control = CONTROL.map((p) => at(p.u, p.v));
+  const [c0, c1, c2, c3] = control;
+  const curve = `M ${c0.x} ${c0.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${c3.x} ${c3.y}`;
+
+  /*
+   * The target dot sits ON the curve's endpoint. The Figma floats it 35px clear
+   * of the line end, which reads fine there only because the approach is exactly
+   * vertical; centred on the endpoint it is unambiguously the point the curve
+   * arrives at, and the travelling marker (which ends on the same coordinate) has
+   * something to hand off to instead of parking beside it as a second dot.
+   */
+  const target: Point = { x: c3.x, y: c3.y };
+
+  /*
+   * Figma: a 181.161 x 50.813 pill around a 130px "Your Business" set at 20px,
+   * 20px clear of the target disc. All of those are ratios of the type size, so
+   * the capsule and its label grow together. Sizing only the font would spill
+   * the text straight out of the pill, and there is no way to measure SVG text
+   * before layout.
+   */
+  const pillH = type * 2.5407;
+  const pillPadX = type * 1.279;
+  const pillW = type * 6.5 + pillPadX * 2;
+  const pill = {
+    x: target.x - targetR - type - pillW,
+    y: target.y - pillH / 2,
+    w: pillW,
+    h: pillH,
+    textX: target.x - targetR - type - pillW / 2,
+  };
+
+  const dots = DOTS.map((d) => {
+    const at_ = pointOnCubic(control, d.t);
+    return {
+      ...d,
+      x: at_.x,
+      y: at_.y,
+      // Label right edge, gap px clear of the dot, level with its centre.
+      labelX: at_.x - dotR - (d.gap / 20) * type,
+    };
+  });
+
+  const grid = Array.from(
+    { length: GRID_LINES },
+    (_, i) => y1 - (i / (GRID_LINES - 1)) * ph,
+  );
+
+  return {
+    w,
+    h,
+    x0,
+    x1,
+    y0,
+    y1,
+    pw,
+    ph,
+    type,
+    /*
+     * Axis label anchors, both sitting inside their own inset: the x label low
+     * in the bottom band (Figma centres it 56 of 64px below the plot), the y
+     * label hugging the right edge (Figma puts it in the last 15 of 65px).
+     */
+    xAxisY: y1 + padB * 0.62,
+    yAxisX: x1 + padR * 0.72,
+    curve,
+    dots,
+    dotR,
+    target,
+    targetR,
+    targetMidR,
+    targetInnerR,
+    pill,
+    grid,
+    start: c0,
+    // Figma: stroke-width 2.55804 at 20px type, with a 2px hairline floor.
+    stroke: Math.max(type * 0.1279, 2),
+    // Figma: stroke-dasharray "10 10" at 20px type.
+    dash: `${type * 0.5} ${type * 0.5}`,
+    // Figma: tracking-[1px] on the uppercase axis labels.
+    tracking: type * 0.05,
+  };
+}
 
 export function GrowthChart({ className = "" }: { className?: string } = {}) {
-  /*
-   * Matches Tailwind's sm breakpoint. Below it the card is narrow enough that
-   * the labels need the boost; at sm and up the measured Figma sizes stand.
-   */
-  const compact = useMediaQuery("(max-width: 639px)");
-  const s = compact ? COMPACT_TYPE_SCALE : 1;
-
   const rootRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const dotRef = useRef<SVGCircleElement>(null);
   const haloRef = useRef<SVGCircleElement>(null);
 
-  const [arrived, setArrived] = useState(false);
+  /*
+   * The measured box.
+   *
+   * State is set from the ResizeObserver's callback rather than from the effect
+   * body, which is what keeps this clear of react-hooks/set-state-in-effect (the
+   * same pattern components/ui/marquee.tsx uses to measure its track). Observing
+   * the svg itself is safe: a viewBox change cannot alter the element's own box,
+   * so there is no measure/paint feedback loop.
+   */
+  const [box, setBox] = useState(FALLBACK);
 
-  // How many milestones the marker has swept past. Drives their pop-in.
+  const [arrivedState, setArrivedState] = useState(false);
   const [reached, setReached] = useState(0);
+
   const reachedRef = useRef(0);
   const arrivedRef = useRef(false);
 
-  // Frame-to-frame velocity, smoothed, driving the marker's glow intensity.
+  // Frame-to-frame velocity, smoothed, driving the marker's size.
   const previousRef = useRef(0);
   const heatRef = useRef(0);
 
   /*
-   * The chart renders ~640px tall. On a 700-800px viewport with a sticky nav,
-   * anything above ~0.7 here is unreachable — inView never flips, every element
-   * stays at opacity 0 and the card renders blank. 0.6 is the highest value
-   * that still triggers reliably; do not raise it without testing short
-   * viewports.
+   * The chart is the bottom half of a one-screen hero, so it is on screen at
+   * load. 0.45 leaves margin on a short window where a higher threshold is
+   * simply unreachable and every element would stay at opacity 0.
    */
-  const inView = useInView(rootRef, { amount: 0.6, once: true });
+  const inView = useInView(rootRef, { amount: 0.45, once: true });
   const reduce = useReducedMotion();
 
   const progress = useMotionValue(0);
 
   /*
-   * Pre-sample the curve once. Calling getPointAtLength every frame makes the
-   * browser re-walk the path geometry; a lookup table reduces the per-frame
-   * cost to an index and one interpolation.
+   * Pre-sample the curve once per layout. Calling getPointAtLength every frame
+   * makes the browser re-walk the path geometry; a lookup table reduces the
+   * per-frame cost to an index and one interpolation.
    */
-  const pointsRef = useRef<{ x: number; y: number }[]>([]);
+  const pointsRef = useRef<Point[]>([]);
 
+  /*
+   * Memoised on the measured box, and that matters: buildLayout returns fresh
+   * arrays, so an unmemoised call would give `paint` a new identity on every
+   * render, which would re-run the sampling effect below and walk the path
+   * geometry 261 times for nothing.
+   */
+  const layout = useMemo(() => buildLayout(box.w, box.h), [box.w, box.h]);
+
+  /*
+   * Arrival is derived from reduced motion rather than assigned, so the static
+   * branch needs no state at all.
+   */
+  const arrived = reduce === true || arrivedState;
+  const show = inView;
+
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (!width || !height) return;
+
+      /*
+       * The largest box that fits the slot, stays under the ceiling, and holds an
+       * aspect in range. Round it: sub-pixel churn in the observed box would
+       * otherwise rebuild the layout and re-sample the path on every scroll frame
+       * that nudges the viewport by a fraction of a px.
+       */
+      const availW = Math.min(width, MAX_BOX.w);
+      const availH = Math.min(height, MAX_BOX.h);
+      const aspect = clamp(availW / availH, MIN_ASPECT, MAX_ASPECT);
+
+      let w = availW;
+      let h = w / aspect;
+      if (h > availH) {
+        h = availH;
+        w = h * aspect;
+      }
+
+      setBox((prev) => {
+        const next = { w: Math.round(w), h: Math.round(h) };
+        return prev.w === next.w && prev.h === next.h ? prev : next;
+      });
+    });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  /*
+   * Marker position and size are the only per-frame work. Shared with the
+   * re-sample below, so a resize mid-animation (or long after it) leaves the
+   * marker on the line rather than at a stale px coordinate.
+   */
+  const paint = useCallback(
+    (p: number) => {
+      const points = pointsRef.current;
+      const marker = markerRef.current;
+      const dot = dotRef.current;
+      if (!points.length || !marker || !dot) return;
+
+      const exact = clamp(p, 0, 1) * SAMPLES;
+      const i = Math.floor(exact);
+      const j = Math.min(i + 1, SAMPLES);
+      const t = exact - i;
+      const x = lerp(points[i].x, points[j].x, t);
+      const y = lerp(points[i].y, points[j].y, t);
+
+      marker.setAttribute("transform", `translate(${x} ${y})`);
+
+      /*
+       * Dots trigger on the marker's x, not on progress: progress is a
+       * path-length fraction, and length diverges from horizontal distance on
+       * the steep section, so a fraction-based trigger would fire in the wrong
+       * place. State is only set on an actual crossing, so this costs two
+       * renders in total rather than one per frame.
+       */
+      let count = 0;
+      for (const d of layout.dots) if (x >= d.x) count += 1;
+      if (count !== reachedRef.current) {
+        reachedRef.current = count;
+        setReached(count);
+      }
+
+      /*
+       * Arrival is derived from progress, not from the tween's onComplete.
+       * useReducedMotion() resolves null -> false after hydration, which re-runs
+       * the effect and calls controls.stop() on the in-flight animation, so
+       * onComplete could silently never fire and leave the target dot and the
+       * pill stuck at opacity 0 forever. Reading the value cannot miss.
+       */
+      if (p >= 0.999 && !arrivedRef.current) {
+        arrivedRef.current = true;
+        setArrivedState(true);
+      }
+
+      /*
+       * Size scales with the marker's own velocity, smoothed. Because the curve
+       * is exponential and the ease accelerates, the dot physically speeds up as
+       * it climbs, and tying its weight to that makes it look like it is loading
+       * up rather than sliding at a constant rate. Radius only: the page has no
+       * shadows, so there is no glow to drive.
+       */
+      const velocity = Math.abs(p - previousRef.current);
+      previousRef.current = p;
+      heatRef.current += (velocity - heatRef.current) * 0.14;
+      const heat = Math.min(heatRef.current * 110, 1);
+
+      dot.setAttribute("r", String(layout.dotR * (1 + heat * 0.28)));
+    },
+    [layout.dots, layout.dotR],
+  );
+
+  useMotionValueEvent(progress, "change", paint);
+
+  // Re-sample whenever the curve changes shape, and put the marker back on it.
   useEffect(() => {
     const path = pathRef.current;
     if (!path) return;
@@ -169,78 +513,14 @@ export function GrowthChart({ className = "" }: { className?: string } = {}) {
       const { x, y } = path.getPointAtLength((i / SAMPLES) * total);
       return { x, y };
     });
-  }, []);
-
-  // Marker position and colour are the only per-frame work.
-  useMotionValueEvent(progress, "change", (p) => {
-    const points = pointsRef.current;
-    const marker = markerRef.current;
-    const dot = dotRef.current;
-    const halo = haloRef.current;
-    if (!points.length || !marker || !dot || !halo) return;
-
-    const exact = Math.min(Math.max(p, 0), 1) * SAMPLES;
-    const i = Math.floor(exact);
-    const j = Math.min(i + 1, SAMPLES);
-    const t = exact - i;
-    const x = lerp(points[i].x, points[j].x, t);
-    const y = lerp(points[i].y, points[j].y, t);
-
-    marker.setAttribute("transform", `translate(${x} ${y})`);
-
-    /*
-     * Milestones trigger on the marker's x, not on progress — progress is a
-     * path-length fraction, and length diverges from horizontal distance on the
-     * steep section, so a fraction-based trigger would fire in the wrong place.
-     * State is only set on an actual crossing, so this costs two renders total
-     * rather than one per frame.
-     */
-    let count = 0;
-    for (const m of MILESTONES) if (x >= m.x) count += 1;
-    if (count !== reachedRef.current) {
-      reachedRef.current = count;
-      setReached(count);
-    }
-
-    /*
-     * Arrival is derived from progress, not from the tween's onComplete.
-     * useReducedMotion() resolves null -> false after hydration, which re-runs
-     * the effect and calls controls.stop() on the in-flight animation — so
-     * onComplete could silently never fire, leaving the peak marker and the
-     * callout stuck at opacity 0 forever. Reading the value cannot miss.
-     */
-    if (p >= 0.999 && !arrivedRef.current) {
-      arrivedRef.current = true;
-      setArrived(true);
-    }
-
-    const colour = mixHex(START, END, colourProgressAt(p));
-    dot.setAttribute("fill", colour);
-    halo.setAttribute("fill", colour);
-
-    /*
-     * Glow scales with the marker's own velocity, smoothed. Because the curve
-     * is exponential and the ease accelerates, the dot physically speeds up as
-     * it climbs — tying light to that makes it look like it is heating up
-     * under load rather than sliding at a constant temperature.
-     */
-    const velocity = Math.abs(p - previousRef.current);
-    previousRef.current = p;
-    heatRef.current += (velocity - heatRef.current) * 0.14;
-    const heat = Math.min(heatRef.current * 110, 1);
-
-    // Heat now only drives the dot's radius; the drop-shadow glow was removed
-    // so the marker stays a flat disc, in keeping with the page's no-shadow rule.
-    dot.setAttribute("r", String(9 + heat * 2.5));
-  });
+    paint(progress.get());
+  }, [layout.curve, paint, progress]);
 
   useEffect(() => {
     if (!inView) return;
 
     if (reduce) {
       progress.set(1);
-      arrivedRef.current = true;
-      setArrived(true);
       return;
     }
 
@@ -254,116 +534,122 @@ export function GrowthChart({ className = "" }: { className?: string } = {}) {
     return () => controls.stop();
   }, [inView, reduce, progress]);
 
-  const show = inView;
-
   return (
     <motion.svg
       ref={rootRef}
-      viewBox="0 0 932 596"
+      viewBox={`0 0 ${layout.w} ${layout.h}`}
       /*
-       * h-auto w-full by default. A caller can add a max-height — the viewBox
-       * is 1.56:1, so across a full-bleed band the natural height runs past the
-       * viewport. preserveAspectRatio then centres the drawing inside the wider
-       * box rather than distorting it.
+       * Fills its slot; the viewBox above is that slot, measured. Within the
+       * aspect clamp the two agree exactly and nothing is scaled, so every size
+       * in buildLayout is a real device px.
        */
-      className={`h-auto w-full ${className}`}
+      className={`h-full w-full ${className}`}
       role="img"
       aria-label="Chart showing business growth accelerating over time with Midnight Surface"
       initial={reduce ? false : { opacity: 0, scale: 0.97, y: 16 }}
       animate={show ? { opacity: 1, scale: 1, y: 0 } : undefined}
       transition={{ duration: 0.85, ease: EASE }}
     >
-      <defs>
-        {/* Green wash under the curve — the payoff, revealed only on arrival. */}
-        <linearGradient id="growth-area" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={END} stopOpacity="0.38" />
-          <stop offset="55%" stopColor={END} stopOpacity="0.13" />
-          <stop offset="100%" stopColor={END} stopOpacity="0" />
-        </linearGradient>
-
-        <clipPath id="growth-area-shape">
-          <path d={`${CURVE} L ${X1} ${BASELINE} L ${X0} ${BASELINE} Z`} />
-        </clipPath>
-      </defs>
-
       {/*
-        1. The wash. Gated on `arrived`, so it cannot appear before the line
-        tops out. Rises from the baseline rather than wiping across, which
-        reads as the area filling up instead of a curtain sliding.
-      */}
-      <g clipPath="url(#growth-area-shape)">
-        <motion.rect
-          x="0"
-          y="0"
-          width="932"
-          height="596"
-          fill="url(#growth-area)"
-          initial={reduce ? false : { opacity: 0, scaleY: 0.72 }}
-          animate={arrived ? { opacity: 1, scaleY: 1 } : undefined}
-          transition={{ duration: 1.05, ease: EASE, delay: 0.12 }}
-          style={{ transformOrigin: `0px ${BASELINE}px` }}
-        />
-      </g>
+        1. Gridlines. Figma's dashed rules, and the only structure behind the
+        curve: the design draws no axis lines at all.
 
-      {/*
-        1b. Gridlines. Deliberately near-invisible (6% ink) — they give the
-        upper field structure without competing with the curve.
+        They wipe out from the left on scaleX rather than on pathLength, and that
+        is load-bearing: Motion implements pathLength as a stroke-dasharray, so
+        it cannot share an element with a real dash pattern. One would silently
+        overwrite the other.
       */}
-      {GRID_LINES.map((y, i) => (
+      {layout.grid.map((y, i) => (
         <motion.line
-          key={y}
-          x1={X0}
-          x2="799"
+          key={i}
+          x1={layout.x0}
+          x2={layout.x1}
           y1={y}
           y2={y}
-          stroke={INK}
-          strokeWidth="1"
-          strokeOpacity="0.06"
-          initial={reduce ? false : { pathLength: 0, opacity: 0 }}
-          animate={show ? { pathLength: 1, opacity: 1 } : undefined}
-          transition={{
-            duration: 0.9,
-            ease: EASE,
-            delay: 0.15 + i * 0.07,
-          }}
+          stroke={GRID}
+          strokeWidth="2"
+          strokeDasharray={layout.dash}
+          strokeLinecap="round"
+          initial={reduce ? false : { scaleX: 0, opacity: 0 }}
+          animate={show ? { scaleX: 1, opacity: 1 } : undefined}
+          transition={{ duration: 0.9, ease: EASE, delay: 0.15 + i * 0.06 }}
+          style={{ transformOrigin: `${layout.x0}px ${y}px` }}
         />
       ))}
 
-      {/* 2. Axes: bottom rule and right-hand vertical, as drawn in Figma. */}
-      <motion.path
-        d={`M 134 ${BASELINE} L 799 ${BASELINE} M 799 98 L 799 ${BASELINE}`}
-        fill="none"
-        stroke={INK}
-        strokeWidth="2.5"
-        initial={reduce ? false : { pathLength: 0, opacity: 0 }}
-        animate={show ? { pathLength: 1, opacity: 1 } : undefined}
-        transition={{ duration: 0.8, ease: EASE }}
-      />
+      {/*
+        2. Axis copy. Two spans each, as the Figma sets them: the sentence in ink
+        at 70% and the subject in orange, so the two axes read together as "your
+        growth over time with MidnightUX".
+
+        The wordmark is the Figma's, verbatim and by request. Note it does NOT
+        match the rest of the site, which sets "Midnight Surface" in the header
+        (site-header.tsx) and the footer (site-footer.tsx). If those are ever
+        reconciled, this string is the third place to change.
+      */}
+      <motion.g
+        fill={INK}
+        fontSize={layout.type}
+        letterSpacing={layout.tracking}
+        initial={reduce ? false : { opacity: 0, y: 8 }}
+        animate={show ? { opacity: 1, y: 0 } : undefined}
+        transition={{ duration: 0.65, ease: EASE, delay: 0.32 }}
+      >
+        <text
+          x={layout.x0 + layout.pw / 2}
+          y={layout.xAxisY}
+          textAnchor="middle"
+          dominantBaseline="central"
+        >
+          {/*
+            The gap between the spans is a NON-BREAKING space, and has to be.
+            SVG applies XML whitespace handling to tspan content, so a plain
+            trailing space is collapsed away and the two spans render welded
+            together as "TIME WITHMIDNIGHTUX".
+          */}
+          <tspan fillOpacity="0.7">{"TIME WITH\u00a0"}</tspan>
+          <tspan fill={ORANGE} fontWeight="500">
+            MIDNIGHTUX
+          </tspan>
+        </text>
+        <text
+          x={layout.yAxisX}
+          y={layout.y0 + layout.ph / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          transform={`rotate(-90 ${layout.yAxisX} ${layout.y0 + layout.ph / 2})`}
+        >
+          {/* Non-breaking space, for the reason above. */}
+          <tspan fillOpacity="0.7">{"YOUR\u00a0"}</tspan>
+          <tspan fill={ORANGE} fontWeight="500">
+            GROWTH
+          </tspan>
+        </text>
+      </motion.g>
 
       {/*
-        3. The curve — design black, no gradient.
+        3. The curve.
 
-        strokeLinecap MUST stay "butt". Motion implements pathLength: 0 as
-        `stroke-dasharray: 0px 1px`, and per the SVG spec a zero-length dash
-        with a round cap paints a filled circle of stroke-width diameter — so
-        a round cap renders a black dot at the curve's end before the draw
-        starts. The opacity gate below is a second guard against the same class
-        of pre-draw paint.
+        strokeLinecap is the Figma's "round". Motion implements pathLength: 0 as
+        `stroke-dasharray: 0px 1px`, and per the SVG spec a zero-length dash with
+        a round cap paints a filled circle of stroke-width diameter, so a round
+        cap does put a dot at the path's start before the draw begins. It is
+        harmless here only because the travelling marker sits on that exact point
+        at several times the radius, and because opacity snaps on at LEAD_IN
+        rather than fading in across the draw. Do not move either.
       */}
       <motion.path
         ref={pathRef}
-        d={CURVE}
+        d={layout.curve}
         fill="none"
-        stroke={INK}
-        strokeWidth="3"
-        strokeLinecap="butt"
+        stroke={ORANGE}
+        strokeWidth={layout.stroke}
+        strokeLinecap="round"
         initial={reduce ? false : { pathLength: 0, opacity: 0 }}
         animate={show ? { pathLength: 1, opacity: 1 } : undefined}
         /*
-         * pathLength must match the marker's tween exactly — same duration,
-         * ease and delay — or the dot drifts off the end of its own line.
-         * opacity snaps on at the same instant rather than fading across the
-         * draw, which would leave the stroke washed out for two seconds.
+         * pathLength must match the marker's tween exactly, same duration, ease
+         * and delay, or the dot drifts off the end of its own line.
          */
         transition={{
           pathLength: {
@@ -375,220 +661,194 @@ export function GrowthChart({ className = "" }: { className?: string } = {}) {
         }}
       />
 
-      {/* 4. Axis copy. Reads across the two axes as "your growth / time with us". */}
-      <motion.g
-        fill={INK}
-        initial={reduce ? false : { opacity: 0, y: 8 }}
-        animate={show ? { opacity: 1, y: 0 } : undefined}
-        transition={{ duration: 0.65, ease: EASE, delay: 0.32 }}
-      >
-        <text
-          x="466"
-          y="558"
-          textAnchor="middle"
-          fontSize={19 * s}
-          letterSpacing={3.4 * s}
-          fillOpacity="0.45"
-        >
-          TIME WITH US
-        </text>
-        <text
-          x="-302"
-          y="850"
-          textAnchor="middle"
-          fontSize={19 * s}
-          letterSpacing={3.4 * s}
-          fillOpacity="0.45"
-          transform="rotate(-90)"
-        >
-          YOUR GROWTH
-        </text>
-      </motion.g>
-
       {/*
-        4b. Milestones. Each pops as the marker sweeps past it, so the single
-        sweep becomes a sequence of beats the eye can follow — and the labels
-        put the product's actual promises on the curve itself.
+        4. The labelled dots, each popping as the marker sweeps past it, so the
+        single sweep becomes a sequence of beats the eye can follow. Labels sit
+        level with their dot and right-aligned to its left, as the Figma places
+        them.
       */}
-      {MILESTONES.map((m, i) => {
+      {layout.dots.map((d, i) => {
         const hit = reached > i;
         return (
           <motion.g
-            key={m.label}
+            key={d.label}
             initial={reduce ? false : { opacity: 0 }}
             animate={hit ? { opacity: 1 } : undefined}
             transition={{ duration: 0.45, ease: EASE }}
           >
             <motion.circle
-              cx={m.x}
-              cy={m.y}
-              r="6"
-              fill={INK}
+              cx={d.x}
+              cy={d.y}
+              r={layout.dotR}
+              fill={ORANGE}
               initial={reduce ? false : { scale: 0 }}
               animate={hit ? { scale: [0, 1.7, 1] } : undefined}
               transition={{ duration: 0.6, ease: EASE, times: [0, 0.4, 1] }}
-              style={{ transformOrigin: `${m.x}px ${m.y}px` }}
+              style={{ transformOrigin: `${d.x}px ${d.y}px` }}
             />
             <motion.text
-              x={m.x - 18 * s}
-              y={m.y - 16 * s}
+              x={d.labelX}
+              y={d.y}
               textAnchor="end"
-              fontSize={16 * s}
+              dominantBaseline="central"
+              fontSize={layout.type}
               fill={INK}
-              fillOpacity="0.55"
+              fillOpacity="0.7"
               initial={reduce ? false : { opacity: 0, x: 8 }}
               animate={hit ? { opacity: 1, x: 0 } : undefined}
               transition={{ duration: 0.5, ease: EASE, delay: 0.08 }}
             >
-              {m.label}
+              {d.label}
             </motion.text>
           </motion.g>
         );
       })}
 
       {/*
-        5. Origin marker plus its anchor label. The label gives the red beat
-        something to mean — without a "before", the green ending has nothing
-        to land against.
+        5. The target dot: three stacked orange discs at the Figma's radii and
+        opacities, sitting on the curve's endpoint so the line runs into it. It
+        does not exist until the curve actually reaches it, because showing the
+        destination up front gives away the ending and leaves a stray dot floating
+        in empty space.
+
+        The rings land outside-in on a stagger, which is what carries the arrival
+        beat now that there is no area fill to reveal (the Figma has none). `fill`
+        stays a plain attribute: in `initial` it meant the first paint, before
+        Motion applied anything, used SVG's default fill of black.
+
+        The pulse below them is the resting beat. It used to live on the
+        travelling marker, but the marker now retires on arrival (see 7), and
+        without something breathing here a finished chart reads as a screenshot to
+        anyone who scrolls back up. Same centre, same radius as the outer disc, so
+        it reads as THIS dot being live rather than as another dot.
       */}
       <motion.circle
-        cx={X0}
-        cy="453"
-        r="13"
-        fill="#dedede"
-        initial={reduce ? false : { scale: 0 }}
-        animate={show ? { scale: 1 } : undefined}
-        transition={{ type: "spring", stiffness: 420, damping: 22, delay: 0.22 }}
-        style={{ transformOrigin: `${X0}px 453px` }}
-      />
-      <motion.text
-        x={X0}
-        y={488 + 8 * (s - 1)}
-        textAnchor="middle"
-        fontSize={15 * s}
-        letterSpacing={2.6 * s}
-        fill={INK}
-        fillOpacity="0.4"
-        initial={reduce ? false : { opacity: 0, y: 6 }}
-        animate={show ? { opacity: 1, y: 0 } : undefined}
-        transition={{ duration: 0.55, ease: EASE, delay: 0.42 }}
-      >
-        TODAY
-      </motion.text>
-
-      {/*
-        6. Peak marker. Does not exist until the curve actually gets there —
-        showing the destination up front gives away the ending and leaves a
-        stray dot floating in empty space.
-        `fill` stays a plain attribute: putting it in `initial` meant the first
-        paint, before Motion applied anything, used SVG's default fill (black).
-      */}
-      <motion.circle
-        cx={X1}
-        cy="134"
-        r="15"
-        fill={END}
-        initial={reduce ? false : { scale: 0, opacity: 0 }}
-        animate={arrived ? { scale: [0, 1.6, 1], opacity: 1 } : undefined}
-        transition={{ duration: 0.8, ease: EASE, times: [0, 0.42, 1] }}
-        style={{ transformOrigin: `${X1}px 134px` }}
+        cx={layout.target.x}
+        cy={layout.target.y}
+        r={layout.targetR}
+        fill={ORANGE}
+        initial={reduce ? false : { scale: 1, opacity: 0 }}
+        animate={
+          reduce
+            ? { scale: 1, opacity: 0 }
+            : arrived
+              ? { scale: [1, 1.9, 1], opacity: [0.26, 0, 0.26] }
+              : undefined
+        }
+        transition={
+          reduce
+            ? { duration: 0 }
+            : { duration: 3.2, repeat: Infinity, ease: "easeOut", delay: 0.7 }
+        }
+        style={{
+          transformOrigin: `${layout.target.x}px ${layout.target.y}px`,
+        }}
       />
 
-      {/*
-        6b. Arrival burst. Two rings radiating out of the peak, staggered — the
-        moment the line lands should read as an event, not just a stop.
-      */}
-      {[0, 1].map((i) => (
+      {[
+        { r: layout.targetR, opacity: 0.3, delay: 0 },
+        { r: layout.targetMidR, opacity: 0.5, delay: 0.07 },
+        { r: layout.targetInnerR, opacity: 1, delay: 0.14 },
+      ].map((ring, i) => (
         <motion.circle
           key={i}
-          cx={X1}
-          cy="134"
-          r="15"
-          fill="none"
-          stroke={END}
-          strokeWidth="2"
-          initial={reduce ? false : { scale: 1, opacity: 0 }}
-          animate={arrived ? { scale: [1, 4.2], opacity: [0.55, 0] } : undefined}
-          transition={{ duration: 1.1, ease: EASE, delay: i * 0.18 }}
-          style={{ transformOrigin: `${X1}px 134px` }}
+          cx={layout.target.x}
+          cy={layout.target.y}
+          r={ring.r}
+          fill={ORANGE}
+          fillOpacity={ring.opacity}
+          initial={reduce ? false : { scale: 0 }}
+          animate={arrived ? { scale: [0, 1.35, 1] } : undefined}
+          transition={{
+            duration: 0.75,
+            ease: EASE,
+            times: [0, 0.45, 1],
+            delay: ring.delay,
+          }}
+          style={{
+            transformOrigin: `${layout.target.x}px ${layout.target.y}px`,
+          }}
         />
       ))}
 
-      {/* 7. Callout, springs in behind the arrival beat. */}
-      <g transform={`translate(${X1} 134)`}>
-        <motion.g
-          initial={reduce ? false : { opacity: 0, scale: 0.8, y: 8 }}
-          animate={arrived ? { opacity: 1, scale: 1, y: 0 } : undefined}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 22,
-            delay: 0.14,
-          }}
+      {/* 6. Callout pill, springing in behind the arrival beat. */}
+      <motion.g
+        initial={reduce ? false : { opacity: 0, scale: 0.8, x: 8 }}
+        animate={arrived ? { opacity: 1, scale: 1, x: 0 } : undefined}
+        transition={{ type: "spring", stiffness: 300, damping: 22, delay: 0.2 }}
+        style={{
+          transformOrigin: `${layout.pill.x + layout.pill.w}px ${layout.target.y}px`,
+        }}
+      >
+        <rect
+          x={layout.pill.x}
+          y={layout.pill.y}
+          width={layout.pill.w}
+          height={layout.pill.h}
+          rx={layout.pill.h / 2}
+          fill={ORANGE_TINT}
+        />
+        <text
+          x={layout.pill.textX}
+          y={layout.target.y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={layout.type}
+          fontWeight="500"
+          fill={ORANGE}
         >
-          {/*
-            The pill is sized from the same scale as its label, so the box and
-            the type grow together — scaling only the font would spill the text
-            straight out of the capsule.
-          */}
-          <rect
-            x={-264 * s}
-            y={-74 * s}
-            width={242 * s}
-            height={46 * s}
-            rx={23 * s}
-            fill={INK}
-            fillOpacity="0.93"
-          />
-          <text
-            x={-143 * s}
-            y={-44 * s}
-            textAnchor="middle"
-            fontSize={17 * s}
-            fill="#ffffff"
-          >
-            Your business, grown
-          </text>
-        </motion.g>
-      </g>
+          {PILL_LABEL}
+        </text>
+      </motion.g>
 
       {/*
-        8. Travelling marker, painted last so it sits above the curve.
-        Outer <g> is positioned imperatively; the inner motion.g owns the fade.
-        Sharing one element between Motion and an imperative transform write
-        means one silently clobbers the other.
+        7. Travelling marker, painted last so it sits above the curve. The outer
+        <g> is positioned imperatively; the inner motion.g owns the fade. Sharing
+        one element between Motion and an imperative transform write means one
+        silently clobbers the other.
+
+        It is the drawing head, and it RETIRES on arrival. The target dot now
+        lands on the same point, so leaving the marker there would stack two dots
+        and two competing pulses on one coordinate. Fading it out hands the beat
+        to the target dot, which is where the eye should finish.
+
+        Under reduced motion `arrived` is true from the first frame, so the marker
+        is never painted at all and the static chart is the design's three dots.
       */}
-      <g ref={markerRef} transform={`translate(${X0} 453)`}>
+      <g
+        ref={markerRef}
+        transform={`translate(${layout.start.x} ${layout.start.y})`}
+      >
         <motion.g
           initial={reduce ? false : { opacity: 0 }}
-          animate={show ? { opacity: 1 } : undefined}
-          transition={{ duration: 0.4, delay: 0.26 }}
+          animate={arrived ? { opacity: 0 } : show ? { opacity: 1 } : undefined}
+          transition={
+            arrived
+              ? { duration: 0.4, ease: EASE, delay: 0.12 }
+              : { duration: 0.4, delay: 0.26 }
+          }
         >
           <motion.circle
             ref={haloRef}
-            r="15"
-            fill={START}
+            r={layout.dotR * 1.66}
+            fill={ORANGE}
             /*
-             * Slow breathe after arrival rather than freezing. A completely
-             * static end state makes the whole thing read as a screenshot to
-             * anyone who scrolls back up.
+             * Pulses only while the line is being drawn. There is no
+             * post-arrival branch any more, because the marker is on its way out
+             * by then and the target dot has taken over the resting beat.
              */
             animate={
-              reduce
-                ? { scale: 1, opacity: 0.22 }
-                : arrived
-                  ? { scale: [1, 1.7, 1], opacity: [0.24, 0.06, 0.24] }
-                  : { scale: [1, 2.5, 1], opacity: [0.3, 0, 0.3] }
+              reduce || arrived
+                ? { scale: 1, opacity: 0 }
+                : { scale: [1, 2.5, 1], opacity: [0.3, 0, 0.3] }
             }
             transition={
-              reduce
-                ? { duration: 0 }
-                : arrived
-                  ? { duration: 3.2, repeat: Infinity, ease: "easeInOut" }
-                  : { duration: 1.8, repeat: Infinity, ease: "easeOut" }
+              reduce || arrived
+                ? { duration: 0.3 }
+                : { duration: 1.8, repeat: Infinity, ease: "easeOut" }
             }
           />
-          <circle ref={dotRef} r="9" fill={START} />
+          <circle ref={dotRef} r={layout.dotR} fill={ORANGE} />
         </motion.g>
       </g>
     </motion.svg>

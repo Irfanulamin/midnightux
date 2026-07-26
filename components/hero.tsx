@@ -9,21 +9,33 @@ import { TextReveal } from "@/components/ui/text-reveal";
  * Stacked banner: copy on top, chart underneath, the whole thing inside one
  * screen.
  *
- * The height has to be definite (h-, not min-h-). The card caps the chart with
- * max-h-full, and a percentage max-height against an auto-height ancestor
- * resolves to `none` — on min-height alone the chart kept its natural 637px and
- * pushed the section past 1400px. dvh rather than vh so mobile browser chrome
- * does not hide the bottom of the card, plus a px floor so a very short window
- * overflows instead of crushing the headline.
+ * The height has to be definite (h-, not min-h-), because the chart measures the
+ * slot it is given and a percentage against an auto-height ancestor resolves to
+ * nothing. dvh rather than vh so mobile browser chrome does not hide the bottom
+ * of the chart, plus a px floor so a very short window overflows instead of
+ * crushing the headline.
  *
- * Everything above the card is deliberately tight: every px of leading spent up
- * here comes straight out of the chart's share of the screen.
+ * The chart is the section's whole point, and it gets whatever the copy leaves,
+ * so every vertical measure above it is sized in dvh rather than at a fixed px
+ * or a breakpoint: `clamp(floor, Ndvh, ceiling)`. A short screen therefore hands
+ * the drawing its space continuously rather than at one snap point, which is
+ * what stopped the chart being squeezed on a laptop while looking right on a
+ * desktop. The floors keep the copy legible when the window is genuinely tiny.
+ *
+ * The headline is clamped against BOTH axes, min(vw, dvh): width alone let it
+ * stay at its cap on a wide-but-short window and eat the chart's height.
+ *
+ * There is deliberately no card behind the chart. The Figma has none (it sits
+ * straight on the dot grid), and the white panel that used to be here was the
+ * reason the chart looked small: a wide, short box against a drawing that could
+ * not match its aspect, so the drawing scaled down inside it and left dead white
+ * space either side.
  */
 export function Hero() {
   return (
     <section
       id="top"
-      className="bg-dotgrid relative flex h-dvh min-h-[620px] flex-col px-6 pb-8 pt-10 sm:pt-14 md:pt-16"
+      className="bg-dotgrid relative flex h-dvh min-h-[620px] flex-col px-6 pt-[clamp(1.5rem,4dvh,4rem)] pb-[clamp(1rem,2.4dvh,2rem)]"
     >
       <div className="mx-auto max-w-[1160px] text-center">
         {/*
@@ -36,12 +48,11 @@ export function Hero() {
           as="h1"
           text="Everything Your Business Needs in One Website"
           /*
-           * Stepped down from the Figma's 88px. Now that the banner is one
-           * fixed screen, the headline and the chart draw on the same budget:
-           * at 88px this wrapped to three lines and left the chart 218px tall.
-           * At 56px it sets in two, which hands about 200px back to the chart.
+           * Stepped down from the Figma's 88px, which sets three lines here and
+           * would take roughly 130px straight out of the chart. Two lines at
+           * this ramp is the trade the section is built on.
            */
-          className="mx-auto max-w-[760px] text-[clamp(1.875rem,4.8vw,3.5rem)] font-bold leading-[1.08] tracking-[-0.03em] text-ink"
+          className="mx-auto max-w-[820px] text-[clamp(1.75rem,min(4.8vw,6dvh),3.5rem)] leading-[1.08] font-bold tracking-[-0.04em] text-ink"
           delay={0.15}
           stagger={0.06}
           duration={1}
@@ -51,14 +62,14 @@ export function Hero() {
 
         <RevealGroup stagger={0.11} delayChildren={0.55} amount={0.1}>
           <RevealItem>
-            <p className="mx-auto mt-4 max-w-[520px] text-balance text-[15px] leading-6 text-ink-muted sm:mt-5 sm:text-[16px] sm:leading-7">
+            <p className="mx-auto mt-[clamp(0.5rem,1.8dvh,1.25rem)] max-w-[600px] text-[clamp(0.9375rem,1.9dvh,1.0625rem)] leading-[1.55] text-balance text-ink-muted">
               Professional websites for small businesses, designed, developed,
               launched, and supported without breaking your bank.
             </p>
           </RevealItem>
 
           <RevealItem>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3 sm:mt-6">
+            <div className="mt-[clamp(0.75rem,2.2dvh,1.5rem)] flex flex-wrap items-center justify-center gap-3">
               <Button asChild className="font-semibold">
                 <Link href="/contact">
                   <ButtonLabel>Get a Free Consultation</ButtonLabel>
@@ -75,14 +86,15 @@ export function Hero() {
       </div>
 
       {/*
-        Width is the measured 1060 from the Figma, unchanged. Only the height is
-        new: flex-1 + min-h-0 makes the card take the rest of the viewport, and
-        max-h-full caps the chart to that rather than to its own 1.56:1 aspect,
-        which is what keeps banner and chart inside one screen.
+        The chart's slot, and nothing else: no card, no padding, no background.
+        `flex-1 min-h-0` hands it the rest of the screen; GrowthChart measures this
+        box and sizes itself inside it, holding the Figma's near-square aspect and
+        its own px ceiling, then centring on the dot grid. So this max-w is only an
+        outer bound, not the drawing's width, and the chart cannot be stretched
+        wide by a wide window.
       */}
-      <div className="mx-auto mt-6 flex min-h-0 w-full max-w-[960px] flex-1 items-center justify-center rounded-card bg-white p-3 sm:mt-8 sm:p-4 md:p-6">
-        {/* Fits at any width — the chart grows its own type below sm. */}
-        <GrowthChart className="max-h-full" />
+      <div className="mx-auto mt-[clamp(0.75rem,2.4dvh,2rem)] flex min-h-0 w-full max-w-[960px] flex-1 items-center justify-center">
+        <GrowthChart />
       </div>
     </section>
   );

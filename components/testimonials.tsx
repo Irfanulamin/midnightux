@@ -20,8 +20,16 @@ const testimonials: Testimonial[] = [
     quote:
       "They showed me a homepage before I paid a cent, and it already beat the site I had been putting off for two years. We were live the week after.",
     image: "/design/testimonial-johnson-smith.png",
-    width: 287,
-    height: 405,
+    /*
+     * 535 x 830, measured off the file. It was declared 287 x 405 (the design's
+     * display box, not the export), and next/image treats these as the source's
+     * INTRINSIC size: it caps the width it will serve at that figure and derives
+     * the reserved aspect from it. So this slide was pinned to 287px when 535 was
+     * available, and to a 0.709 aspect when the file is 0.645, which is most of
+     * why it looked softer and framed differently from the other two.
+     */
+    width: 535,
+    height: 830,
   },
   {
     name: "Alexis John",

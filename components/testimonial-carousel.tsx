@@ -115,12 +115,39 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                 close up once they are side by side.
               */}
               <div className="flex flex-col gap-4 md:flex-row md:gap-1">
+                {/*
+                  ONE box at every width: the design's 287 x 405 portrait.
+
+                  It used to be `w-full h-[320px]` below md, widening to the
+                  design's portrait only at md, and that broke the slides against
+                  each other in two ways at once.
+
+                  The three exports are 535x830, 463x632 and 736x946 -- different
+                  sizes AND different aspects (0.645 / 0.733 / 0.778). next/image
+                  never upscales past a source's intrinsic width, so a full-width
+                  box at sm (about 590px) served the smallest at an upscale and the
+                  largest at native: one slide soft, the next sharp. Meanwhile
+                  object-top over three different aspects cropped each portrait to a
+                  different place, so the framing jumped on advance.
+
+                  Pinning the aspect to 287/405 and capping the width at 287 fixes
+                  both: identical geometry on every slide, identical crop, and no
+                  asset ever asked to fill more pixels than it has. `sizes` is
+                  explicit for the same reason -- with it absent the browser assumes
+                  100vw and picks candidates for a box far wider than this ever is.
+
+                  See also the width/height note in testimonials.tsx: the Johnson
+                  Smith entry declared the DISPLAY box (287x405) as the file's
+                  intrinsic size when the export is really 535x830, which capped
+                  that slide's resolution on its own.
+                */}
                 <Image
                   src={item.image}
                   alt={item.name}
                   width={item.width}
                   height={item.height}
-                  className="h-[320px] w-full shrink-0 rounded-2xl object-cover object-top sm:h-[380px] md:h-[405px] md:w-[287px] md:object-center"
+                  sizes="287px"
+                  className="mx-auto aspect-[287/405] w-full max-w-[287px] shrink-0 rounded-2xl object-cover object-center md:mx-0 md:aspect-auto md:h-[405px]"
                 />
 
                 <div className="flex flex-1 flex-col justify-between rounded-2xl bg-white p-6 sm:p-8 md:p-11">

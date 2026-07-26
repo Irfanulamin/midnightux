@@ -338,12 +338,62 @@ html body[data-scroll-locked] {
   --removed-body-scroll-bar-size: 0px;
 }
 
-/* Dot grid that sits behind the hero. */
+/*
+ * Grid that sits behind the hero.
+ *
+ * Not a dot grid: the Figma (node 10:8437, the tile the hero background repeats)
+ * draws ruled CELLS with a dot at every intersection, and only the dots were
+ * implemented here before.
+ *
+ * Every number below was measured off the export rather than chosen. The tile is
+ * 463.667px square and divides 10 across by 11 down, which is where the cell size
+ * comes from and why it is deliberately NOT square:
+ *
+ *   463.667 / 10 = 46.367   cell width
+ *   463.667 / 11 = 42.152   cell height
+ *
+ * Confirmed independently by counting rules in the 1440-wide background render:
+ * 38.63px pitch horizontally and 35.10px vertically at that render's 1200/1440
+ * scale, which is 46.36 x 42.12. Do not round these to a square cell; the grid
+ * visibly drifts out of step with the design within a couple of screens.
+ *
+ * Ink values have to be read off the COMPOSED hero, not off the tile. Sampling
+ * the tile in isolation gives rules at 14-17% black and solid black dots, but the
+ * tile sits inside a mask group that knocks the whole thing back to roughly 7%
+ * opacity, and measuring the assembled hero (node 332:13467) puts the darkest
+ * background pixel at alpha 0.071. Taking the isolated figures literally made the
+ * grid about twelve times too dark.
+ *
+ *   tile art        composed (x ~0.07)
+ *   rules  0.155 -> 0.014
+ *   dots   1.0   -> 0.08
+ *
+ * So the 0.08 the previous version used for its dots was right; rules were the
+ * only thing actually missing. The roughly 6:1 dot-to-rule ratio is the design and
+ * is what stops this reading as graph paper: the dots carry the pattern and the
+ * rules only just register. Both are vars, so they are cheap to re-tune by eye.
+ *
+ * Three layers in one background-image, painted front to back: dots, then the
+ * vertical rules, then the horizontal ones. The dot layer is offset by half a
+ * cell so that `circle at center` lands its centre on a rule crossing rather than
+ * showing one quadrant in each tile corner.
+ */
 .bg-dotgrid {
-  background-image: radial-gradient(
-    circle at 2px 2px,
-    rgb(0 0 0 / 0.08) 2px,
-    transparent 0
-  );
-  background-size: 44px 44px;
+  --grid-cell-w: 46.367px;
+  --grid-cell-h: 42.152px;
+  --grid-rule: rgb(0 0 0 / 0.014);
+  --grid-dot: rgb(0 0 0 / 0.08);
+
+  background-image:
+    radial-gradient(circle at center, var(--grid-dot) 2px, transparent 2px),
+    linear-gradient(to right, var(--grid-rule) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-rule) 1px, transparent 1px);
+  background-position:
+    calc(var(--grid-cell-w) / 2) calc(var(--grid-cell-h) / 2),
+    0 0,
+    0 0;
+  background-size:
+    var(--grid-cell-w) var(--grid-cell-h),
+    var(--grid-cell-w) var(--grid-cell-h),
+    var(--grid-cell-w) var(--grid-cell-h);
 }
