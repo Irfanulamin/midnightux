@@ -192,7 +192,7 @@ export function AccordionItem({
           aria-controls={panelId}
           // Clicking an open row closes it, so the set can rest fully collapsed.
           onClick={() => setOpenIndex(open ? null : index)}
-          className={`group ${triggerClassName ?? ""}`}
+          className={`group appearance-none border-0 bg-transparent p-0 text-left focus-visible:outline-none ${triggerClassName ?? ""}`}
         >
           {trigger}
         </button>

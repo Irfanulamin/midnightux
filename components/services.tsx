@@ -99,7 +99,7 @@ export function Services() {
             >
               <AccordionItem
                 index={index}
-                className="border-b border-white/15"
+                className="w-full"
                 triggerClassName="flex w-full cursor-pointer items-center justify-between gap-4 py-5 text-left sm:gap-6 sm:py-7"
                 trigger={
                   <>

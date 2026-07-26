@@ -104,6 +104,10 @@ const DRAW_SECONDS = 2.4;
 // Long enough for the empty frame to land before the line starts moving.
 const LEAD_IN = 1.3;
 
+// Bias the moving marker slightly ahead so it does not appear clipped at the
+// very first frame when the curve begins at the plot edge.
+const START_PROGRESS = 0.012;
+
 // Entrances and settles.
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -457,7 +461,9 @@ export function GrowthChart({ className = "" }: { className?: string } = {}) {
       const dot = dotRef.current;
       if (!points.length || !marker || !dot) return;
 
-      const exact = clamp(p, 0, 1) * SAMPLES;
+      const safeProgress = clamp(p, 0, 1);
+      const markerProgress = Math.max(safeProgress, START_PROGRESS);
+      const exact = markerProgress * SAMPLES;
       const i = Math.floor(exact);
       const j = Math.min(i + 1, SAMPLES);
       const t = exact - i;
