@@ -35,20 +35,30 @@ const projects = [
 export function OurWork() {
   return (
     <section id="work" className="scroll-mt-24">
-      <HorizontalPan
-        header={
-          /* Left-aligned in the design, unlike its sibling sections. */
-          <SectionIntro
-            align="left"
-            className="mx-auto w-full max-w-[1160px] px-6"
-            label="Our Work"
-            heading="Websites That Deliver Real Results"
-            headingClassName="mt-7 max-w-[620px] text-ink"
-            body="Every project is designed with one goal in mind: helping businesses attract more customers, generate leads, and grow online"
-            bodyClassName="mt-6 max-w-[640px] text-ink-muted"
-          />
-        }
-      >
+      {/*
+        The heading sits OUTSIDE the pinned block, the same call How It Works
+        makes and for the same reason: the pin is exactly one screen, so every
+        px the header holds is a px the shots do not get.
+
+        Pinned, the header cost about 240px of a 100dvh section, and on a
+        laptop between md and lg that left the images roughly 180px tall - a
+        letterbox strip of a screenshot that is 1853 x 2023, cropped so hard by
+        object-cover that there was nothing to look at. Scrolling the heading
+        away first hands that height back to the track, and the shots come out
+        around 440px on the same screen.
+      */}
+      {/* Left-aligned in the design, unlike its sibling sections. */}
+      <SectionIntro
+        align="left"
+        className="mx-auto w-full max-w-[1160px] px-6 pt-16 sm:pt-20 md:pt-28"
+        label="Our Work"
+        heading="Websites That Deliver Real Results"
+        headingClassName="mt-7 max-w-[620px] text-ink"
+        body="Every project is designed with one goal in mind: helping businesses attract more customers, generate leads, and grow online"
+        bodyClassName="mt-6 max-w-[640px] text-ink-muted"
+      />
+
+      <HorizontalPan>
         {projects.map((project, index) => (
           <article
             key={index}

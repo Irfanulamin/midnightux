@@ -139,8 +139,15 @@ const MAX_ASPECT = 1.35;
  * as the space allows". The Figma sets the chart at 646 wide inside a 1440 frame,
  * a bit under half the width; on a large monitor an uncapped box just inflates
  * the line weight and the type past the proportions the design was drawn at.
+ *
+ * It is the design's own 646 x 550 and not a hair more. The previous 700 x 620
+ * was a little slack over the top of it, and because the hero hands the chart
+ * everything the copy does not take, that slack was reached on any ordinary
+ * laptop: the drawing sat above its drawn size while the headline was still
+ * being squeezed below the design's, which is exactly the imbalance the hero
+ * ratio note describes.
  */
-const MAX_BOX = { w: 700, h: 620 };
+const MAX_BOX = { w: 646, h: 550 };
 
 /*
  * What the server and the first frame draw, before the box has been measured.
@@ -545,7 +552,7 @@ export function GrowthChart({ className = "" }: { className?: string } = {}) {
        */
       className={`h-full w-full ${className}`}
       role="img"
-      aria-label="Chart showing business growth accelerating over time with Midnight Surface"
+      aria-label="Chart showing business growth accelerating over time with MidnightUX"
       initial={reduce ? false : { opacity: 0, scale: 0.97, y: 16 }}
       animate={show ? { opacity: 1, scale: 1, y: 0 } : undefined}
       transition={{ duration: 0.85, ease: EASE }}
@@ -582,10 +589,10 @@ export function GrowthChart({ className = "" }: { className?: string } = {}) {
         at 70% and the subject in orange, so the two axes read together as "your
         growth over time with MidnightUX".
 
-        The wordmark is the Figma's, verbatim and by request. Note it does NOT
-        match the rest of the site, which sets "Midnight Surface" in the header
-        (site-header.tsx) and the footer (site-footer.tsx). If those are ever
-        reconciled, this string is the third place to change.
+        The wordmark is the Figma's, verbatim. The rest of the site now agrees
+        with it: the studio is MidnightUX everywhere (SITE_NAME in lib/site.ts,
+        the header and footer marks), so this string, the two logo assets and
+        SITE_NAME are the places a further rename has to touch.
       */}
       <motion.g
         fill={INK}

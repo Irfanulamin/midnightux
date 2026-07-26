@@ -135,9 +135,15 @@ export function HorizontalPan({
         py is kept tight at md on purpose: the section is exactly one viewport,
         so every px of padding here is a px the cards do not get. At py-14 the
         cards came out 336px tall and their content overflowed.
+
+        `pin-short` cuts it further still (globals.css: pinned, under 1080px
+        tall). A laptop browser has 640-690px of viewport, and the cards these
+        sections are built around - a 562px step card, a screenshot worth
+        looking at - do not fit inside that with desktop padding around them.
+        The padding yields before the content does.
       */}
       <div
-        className={`flex flex-col py-16 md:h-[100dvh] md:py-10 ${
+        className={`flex flex-col py-16 md:h-[100dvh] md:py-10 pin-short:py-4 ${
           centered ? "md:justify-center" : ""
         }`}
       >
@@ -152,7 +158,7 @@ export function HorizontalPan({
         */}
         <div
           ref={trackRef}
-          className={`mt-10 flex flex-col px-6 md:mt-6 md:w-max md:flex-row md:px-0 md:pl-[88vw] ${
+          className={`mt-10 flex flex-col px-6 md:mt-6 md:w-max md:flex-row md:px-0 md:pl-[88vw] pin-short:mt-3 ${
             centered ? "md:shrink-0" : "md:min-h-0 md:flex-1"
           } ${trailClassName} ${gapClassName}`}
         >

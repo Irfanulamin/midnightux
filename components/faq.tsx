@@ -64,10 +64,14 @@ export function Faq() {
           bodyClassName="mx-auto mt-6 max-w-[790px] text-ink-muted"
         />
 
-        {/* Row 2 open on load, matching the Figma's resting state. */}
+        {/*
+          Starts fully collapsed. The Figma draws row 2 open, but that is the
+          state of a mock rather than a resting page: on load it reads as a row
+          the reader opened, and it pushes the rest of the set down before they
+          have asked anything. Accordion's default is null, so nothing is passed.
+        */}
         {/* fixedHeight reserves the tallest panel so the block never jumps. */}
         <Accordion
-          defaultIndex={1}
           fixedHeight
           className="mx-auto mt-10 max-w-[935px] space-y-3 sm:mt-16 sm:space-y-4"
         >

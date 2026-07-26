@@ -1,18 +1,22 @@
 import Image from "next/image";
 
 import { Reveal } from "@/components/ui/reveal";
+import { SITE_NAME } from "@/lib/site";
 import { ArrowUpRightIcon, WhatsappLogoIcon, TelegramLogoIcon } from "@phosphor-icons/react/ssr";
 
 /*
- * Footer, from the bottom of Frame 1 (node 221:8193 + content 243:8287).
+ * Footer, from the bottom of the Landing Page frame (node 221:8193 + content
+ * 243:8287).
  *
  * One dark teal card (#286f6b — the same green the design uses for the section
  * label pills, deliberately lighter than --color-teal) inset 10px from the
  * viewport edges, with three decorative layers under the content:
  *
- *   1. a giant script "Surface" watermark (Brigitha Signature, a font the repo
+ *   1. a giant script "Studio" watermark (Brigitha Signature, a font the repo
  *      does not ship — exported as an image), cream at ~7% so it reads as a
- *      slightly lighter teal;
+ *      slightly lighter teal. It says Studio, not Surface: the signature is the
+ *      second half of the MidnightUX lockup, and the artwork was re-exported
+ *      with the rename;
  *   2. the giant "Midnight" wordmark along the bottom edge, an SVG export of
  *      the vectorised text. In the design it is 1585px wide on a 1420px card
  *      (≈112%) and its bottom quarter runs off the card, so it is wider than
@@ -54,7 +58,7 @@ export function SiteFooter() {
       <div className="relative flex min-h-[100dvh] flex-col overflow-hidden rounded-[24px] bg-[#286f6b]">
         {/*
           The whole bottom-of-card artwork in one asset: the teal script
-          "Surface" and the giant cream "Midnight" already composited, and
+          "Studio" and the giant cream "Midnight" already composited, and
           already cropped at the right edge the way the design masks it. It
           replaces what used to be two separately positioned images.
 
@@ -105,21 +109,26 @@ export function SiteFooter() {
         */}
         <div className="relative mx-auto flex w-full max-w-[1160px] flex-1 flex-col gap-8 px-5 pt-12 pb-6 sm:gap-10 sm:px-6 sm:pt-16 md:flex-row md:gap-20 md:px-8 md:pt-20 lg:gap-36">
           {/*
-            The footer export (node 243:8279), not /logo.png: the site mark
-            sets "Midnight" in black for the white header, which all but
-            disappears on this teal. Same wordmark, drawn light.
+            The footer variant, not /logo.png: the site mark sets "MidnightUX"
+            in near black for the white header, which all but disappears on this
+            teal. Same lockup with the wordmark repainted --color-surface and
+            the yellow "Studio" script untouched.
+
+            Note the Figma's own footer still carries the pre-rename Midnight /
+            Surface mark (node 243:8279); this asset is derived from the updated
+            header lockup instead, so the two ends of the page agree.
           */}
           <Image
             src="/design/footer-logo.png"
-            alt="Midnight Surface"
-            width={768}
-            height={232}
-            className="h-[42px] w-auto self-start sm:h-[48px] md:h-[58px]"
+            alt="MidnightUX"
+            width={688}
+            height={204}
+            className="h-[34px] w-auto self-start sm:h-[42px] md:h-[51px]"
           />
 
           <div className="min-w-0 flex-1">
             <a
-              href="mailto:hello@midnightsurface.com"
+              href="mailto:hello@midnightux.com"
               className="group flex items-start gap-2 text-surface lowercase sm:gap-3"
             >
               {/*
@@ -129,7 +138,7 @@ export function SiteFooter() {
                 at and `break-words` alone would leave it overflowing.
               */}
               <span className="min-w-0 text-[clamp(22px,5vw,64px)] leading-[1.1] tracking-[-0.02em] transition-colors duration-300 [overflow-wrap:anywhere] group-hover:text-yellow">
-                hello@midnightsurface.com
+                hello@midnightux.com
               </span>
               <ArrowUpRightIcon
                 size={32}
@@ -182,7 +191,8 @@ export function SiteFooter() {
               </div>
 
               <p className="w-full self-end text-[13px] tracking-[-0.02em] text-surface/80 sm:ml-auto sm:w-auto sm:text-[14px]">
-                &copy; {new Date().getFullYear()} Midnight Surface. All rights reserved.
+                &copy; {new Date().getFullYear()} {SITE_NAME}. All rights
+                reserved.
               </p>
             </div>
           </div>

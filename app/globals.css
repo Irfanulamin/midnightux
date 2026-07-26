@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Midnight Surface design tokens.
+ * MidnightUX design tokens.
  *
  * Every colour below was sampled pixel-wise from the 1440 x 18113 PNG export
  * of Frame 1, not eyeballed. --color-surface additionally matches the value
@@ -42,6 +42,32 @@
  */
 html {
   font-family: var(--font-inter-display), var(--font-sans);
+}
+
+/*
+ * Nav bar geometry, in one place because two components have to agree on it.
+ *
+ * The Figma floats the bar INSIDE the hero's white card: 10px of page, then the
+ * card's top edge, then 60px of card, then a 71px bar. `SiteHeader` is a sticky
+ * element in normal flow, so it produces that by taking `--header-lead` as a top
+ * margin (its static position, which `top-4` overrides only once it is stuck),
+ * and `Hero` pulls its card up by `--header-flow`, the header's whole flow
+ * height, so the card's top edge lands above the bar rather than below it.
+ *
+ * Keep these three in step. Hard-coding the numbers in either component is what
+ * left the bar sitting on the cream page behind the card, or 6px from its edge.
+ */
+:root {
+  --header-lead: 26px;
+  --header-bar: 60px;
+  --header-flow: calc(var(--header-lead) + var(--header-bar));
+}
+
+@media (min-width: 640px) {
+  :root {
+    --header-lead: 60px;
+    --header-bar: 71px;
+  }
 }
 
 body {
@@ -339,11 +365,13 @@ html body[data-scroll-locked] {
 }
 
 /*
- * Grid that sits behind the hero.
+ * Dot field that sits behind the hero.
  *
- * Not a dot grid: the Figma (node 10:8437, the tile the hero background repeats)
- * draws ruled CELLS with a dot at every intersection, and only the dots were
- * implemented here before.
+ * The Figma (node 10:8437, the tile the hero background repeats) draws ruled
+ * CELLS with a dot at every intersection. THE RULES ARE DELIBERATELY NOT DRAWN
+ * HERE, by request: only the dots, on the design's cell pitch, so the card reads
+ * as a dotted surface rather than as graph paper. Keep the cell vars if the
+ * rules are ever wanted back — they set the spacing either way.
  *
  * Every number below was measured off the export rather than chosen. The tile is
  * 463.667px square and divides 10 across by 11 down, which is where the cell size
@@ -357,43 +385,44 @@ html body[data-scroll-locked] {
  * scale, which is 46.36 x 42.12. Do not round these to a square cell; the grid
  * visibly drifts out of step with the design within a couple of screens.
  *
- * Ink values have to be read off the COMPOSED hero, not off the tile. Sampling
- * the tile in isolation gives rules at 14-17% black and solid black dots, but the
- * tile sits inside a mask group that knocks the whole thing back to roughly 7%
- * opacity, and measuring the assembled hero (node 332:13467) puts the darkest
- * background pixel at alpha 0.071. Taking the isolated figures literally made the
- * grid about twelve times too dark.
+ * Ink has to be read off the COMPOSED hero, not off the tile. Sampling the tile
+ * in isolation gives solid black dots, but it sits inside a mask group that
+ * knocks the whole thing back, and the assembled card is where the real value
+ * is.
  *
- *   tile art        composed (x ~0.07)
- *   rules  0.155 -> 0.014
- *   dots   1.0   -> 0.08
+ * THE FIELD IS NOT UNIFORM. Measured off the current hero card (node 10:11636,
+ * the 1420 x 1380 background of the redrawn Landing Page frame), the ink decays
+ * top to bottom and reaches nothing at the card's foot:
  *
- * So the 0.08 the previous version used for its dots was right; rules were the
- * only thing actually missing. The roughly 6:1 dot-to-rule ratio is the design and
- * is what stops this reading as graph paper: the dots carry the pattern and the
- * rules only just register. Both are vars, so they are cheap to re-tune by eye.
+ *   dot alpha   0.153 at the card top -> 0.122 at y=300 -> 0.039 at y=1060 -> 0
  *
- * Three layers in one background-image, painted front to back: dots, then the
- * vertical rules, then the horizontal ones. The dot layer is offset by half a
- * cell so that `circle at center` lands its centre on a rule crossing rather than
- * showing one quadrant in each tile corner.
+ * which is linear, so it is expressed as a mask over one flat value rather than
+ * as a stack of gradients. The uniform 0.08 this used to carry was that ramp's
+ * average, and it read as a sheet of graph paper behind the whole hero instead
+ * of a surface the copy rises off.
+ *
+ * Because the fade is a mask it CANNOT go on an element with content in it, or
+ * the copy fades out with the dots. Put it on its own absolutely positioned
+ * layer, as `Hero` does.
+ *
+ * The dot layer is offset by half a cell so a dot lands where the design's rules
+ * would have crossed, rather than showing one quadrant in each tile corner.
  */
 .bg-dotgrid {
   --grid-cell-w: 46.367px;
   --grid-cell-h: 42.152px;
-  --grid-rule: rgb(0 0 0 / 0.014);
-  --grid-dot: rgb(0 0 0 / 0.08);
+  --grid-dot: rgb(0 0 0 / 0.153);
 
-  background-image:
-    radial-gradient(circle at center, var(--grid-dot) 2px, transparent 2px),
-    linear-gradient(to right, var(--grid-rule) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-rule) 1px, transparent 1px);
-  background-position:
-    calc(var(--grid-cell-w) / 2) calc(var(--grid-cell-h) / 2),
-    0 0,
-    0 0;
-  background-size:
-    var(--grid-cell-w) var(--grid-cell-h),
-    var(--grid-cell-w) var(--grid-cell-h),
-    var(--grid-cell-w) var(--grid-cell-h);
+  /* Figma's ramp hits zero just past the card's bottom edge, at ~103%. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 103%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 103%);
+
+  background-image: radial-gradient(
+    circle at center,
+    var(--grid-dot) 2px,
+    transparent 2px
+  );
+  background-position: calc(var(--grid-cell-w) / 2)
+    calc(var(--grid-cell-h) / 2);
+  background-size: var(--grid-cell-w) var(--grid-cell-h);
 }

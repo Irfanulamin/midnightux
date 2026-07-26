@@ -74,15 +74,32 @@ export function SiteHeader() {
     if (next) setMenuOpen(false);
   });
 
+  /*
+   * --header-lead (globals.css) is the bar's resting distance from the top of
+   * the page: the Figma floats it 60px inside the hero's white card, and a
+   * sticky element's `top` only takes over once it has been scrolled to, so the
+   * lead is a margin. Hero pulls its card up by lead + bar together.
+   */
   return (
-    <header className="sticky top-4 z-50 px-4 sm:top-6 sm:px-6">
+    <header className="sticky top-4 z-50 mt-[var(--header-lead)] px-4 sm:top-6 sm:px-6">
       <motion.nav
         // Drops in on load rather than just being there, then the same y is
         // reused to park it off screen while scrolling down.
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: hidden ? "-160%" : 0, opacity: hidden ? 0 : 1 }}
         transition={{ duration: hidden ? 0.35 : 0.5, ease: EASE }}
-        className={`mx-auto flex h-14 w-full max-w-[1160px] items-center justify-between rounded-pill pl-4 pr-2 transition-[background-color,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] sm:h-16 sm:pl-6 sm:pr-3 ${
+        /*
+         * All four numbers are the Figma's (node 332:13520): a 1054 x 71 bar,
+         * 20px in from the left, 10px from the right, which is what leaves the
+         * 51px logo and the 51px CTA their 10px of breathing room top and
+         * bottom. The bar is deliberately narrower than the 1160 content
+         * measure the sections below use.
+         *
+         * The height is load-bearing beyond this file, so it comes from the
+         * shared --header-bar rather than being written here: `Hero` pulls its
+         * card up by the bar plus its lead, and the two must not drift.
+         */
+        className={`mx-auto flex h-[var(--header-bar)] w-full max-w-[1054px] items-center justify-between rounded-pill pl-4 pr-2 transition-[background-color,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] sm:pl-5 sm:pr-2.5 ${
           condensed
             ? // Frosted once you leave the top of the page. Height and logo stay
               // put — resizing them mid-scroll made the mark visibly breathe.
@@ -91,13 +108,20 @@ export function SiteHeader() {
         }`}
       >
         <Link href="/" className="shrink-0">
+          {/*
+            The mark, re-exported at 4x after the rename: "MidnightUX" in near
+            black with the yellow "Studio" script written across it. It is a much
+            wider lockup than the old two-line one (172 x 51, an aspect of 3.4
+            against 2.2), so the small sizes step down further than they used to
+            or the wordmark crowds the menu button at 375.
+          */}
           <Image
             src="/logo.png"
-            alt="Midnight Surface"
-            width={700}
-            height={319}
+            alt="MidnightUX"
+            width={688}
+            height={204}
             priority
-            className="h-[38px] w-auto sm:h-[46px] md:h-[52px]"
+            className="h-[30px] w-auto sm:h-[40px] lg:h-[51px]"
           />
         </Link>
 
@@ -106,12 +130,19 @@ export function SiteHeader() {
           fit on one line — they wrapped to two rows and ran straight through
           the wordmark. Tablets get the menu button.
         */}
-        <ul className="hidden items-center gap-7 lg:flex">
+        {/* Figma sets the links 24px apart, not 28. */}
+        <ul className="hidden items-center gap-6 lg:flex">
           {navLinks.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
-                className="group relative block py-1 text-[15px] text-ink/80 transition-colors duration-300 hover:text-ink"
+                /*
+                 * 18px, measured: the Figma's five labels are 50 / 107 / 79 /
+                 * 58 / 129 wide, which only Inter Display at 18 sets. The 15px
+                 * this used to be is what made the bar read as undersized next
+                 * to the logo.
+                 */
+                className="group relative block py-1 text-[18px] text-ink/80 transition-colors duration-300 hover:text-ink"
               >
                 {link.label}
                 {/*
@@ -128,7 +159,16 @@ export function SiteHeader() {
         </ul>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <Button asChild size="sm" className="font-semibold hover:-translate-y-0.5">
+          {/*
+            133 x 51 in the Figma, which the size-based padding cannot express on
+            its own now the bar is 71 tall: the height is set so the pill fills
+            the bar's 10px inset exactly.
+          */}
+          <Button
+            asChild
+            size="sm"
+            className="h-10 font-semibold hover:-translate-y-0.5 sm:h-[51px] sm:px-6 sm:text-[16px]"
+          >
             <Link href="/contact">Get Started</Link>
           </Button>
 

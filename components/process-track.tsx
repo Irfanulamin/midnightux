@@ -117,7 +117,7 @@ export function ProcessCarousel({
               pt-[26px] on top of the track's own mt-6 puts 50px between the
               rule and a resting card, which is the design's gap.
             */
-            className="w-full md:w-[360px] md:shrink-0 md:pt-[26px] lg:min-w-[360px]"
+            className="w-full md:w-[360px] md:shrink-0 md:pt-[26px] lg:min-w-[360px] pin-short:pt-3"
           >
             {/*
               No border and no shadow, active or not: in the Figma the active
@@ -154,31 +154,37 @@ export function ProcessCarousel({
               `pin-short` compresses type and gaps on pinned viewports that
               cannot fit the full-scale card — see globals.css.
 
-              Size floors, climbing by breakpoint: 470px stacked, 510px once
-              the pan takes over at md, and the design's 360x562 at lg.
+              Sizes climbing by breakpoint: 470px stacked, 510px once the pan
+              takes over at md, and the design's 360x562 at lg. THE CARD IS
+              NEVER SHRUNK TO FIT THE PIN — it is the section, and a step card
+              scaled down to survive a short window is not the design.
 
-              The `min(…, 100%)` is load-bearing and must not be simplified to
-              a bare pixel floor. The pinned section is exactly 100dvh, so a
-              card taller than its track does not make the section scroll — the
-              overflow is simply never reachable, and what falls off the bottom
-              is the icon, which sits last. A plain `min-h-[562px]` did exactly
-              that on any viewport under ~1080px tall, and took the pagination
-              dots below the fold with it.
+              What gives instead is the room around it. The pinned section is
+              exactly 100dvh and the column is centred, so anything the column
+              cannot hold is clipped at BOTH ends: the top of the card goes, and
+              the pagination dots go off the bottom. At the old spacing the
+              column cost 218px around a 562px card, which needs 780px of
+              viewport, and a maximised browser on a 1280x800 or 1366x768
+              laptop has 640-690 — which is exactly the md-to-lg breakage. So
+              `pin-short` (globals.css: pinned, under 1080px tall) trims the
+              spacing rather than the card, here and in HorizontalPan:
 
-              Capping the floor at 100% of the track keeps the design's size
-              wherever it fits and quietly yields to the available height
-              wherever it does not, so nothing is ever cropped. On a viewport
-              tall enough for the full-size type (the `pin-short` cut-off at
-              1079px) the track is already ~584px, so the 562px card is what
-              you get there anyway — the clamp only ever engages on the screens
-              where the alternative was a broken card.
+                py-10  -> py-4    48
+                mt-6   -> mt-3    12   (the track)
+                pt-26  -> pt-3    14   (this wrapper)
+                mt-16  -> mt-6    40   (the dots)
+
+              114px back, so the whole column fits from about 640px of viewport
+              height. Below that the design's card and its dots genuinely cannot
+              share one screen, and the dots — decorative, aria-hidden — are what
+              goes first.
             */}
             <article
               ref={(el) => {
                 refs.current[i] = el;
               }}
               data-active={active}
-              className="group relative flex min-h-[470px] w-full flex-col overflow-hidden rounded-lg bg-cream-light p-6 pt-8 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] data-[active=true]:bg-yellow motion-safe:data-[active=true]:-translate-y-3 sm:p-[30px] sm:pt-[70px] md:min-h-[510px] md:motion-safe:data-[active=true]:-translate-y-16 lg:h-[562px] lg:w-[360px] lg:motion-safe:data-[active=true]:-translate-y-[101px] pin-short:pt-[30px]"
+              className="group relative flex min-h-[470px] w-full flex-col overflow-hidden rounded-lg bg-cream-light p-6 pt-8 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] data-[active=true]:bg-yellow motion-safe:data-[active=true]:-translate-y-3 sm:p-[30px] sm:pt-[70px] md:min-h-[510px] md:motion-safe:data-[active=true]:-translate-y-16 lg:h-[562px] lg:w-[360px] lg:motion-safe:data-[active=true]:-translate-y-[101px] pin-short:pt-[30px] pin-short:motion-safe:data-[active=true]:-translate-y-10"
             >
               <p className="text-[14px] font-semibold tracking-[0.05em] text-[#399e98]/50 transition-colors duration-700 group-data-[active=true]:text-teal/70 sm:text-[16px]">
                 /STEPS
@@ -217,8 +223,12 @@ function Dots({ count, active }: { count: number; active: number }) {
   return (
     <div
       aria-hidden
-      /* 64px below the cards at md, which is the design's gap. */
-      className="mt-8 hidden shrink-0 items-center justify-center gap-3 md:mt-16 md:flex"
+      /*
+        64px below the cards at md, which is the design's gap, cut to 24 on a
+        pinned viewport short enough that the design's gap would push the dots
+        off the bottom of the pin - see the card's note.
+      */
+      className="mt-8 hidden shrink-0 items-center justify-center gap-3 md:mt-16 md:flex pin-short:mt-6"
     >
       {Array.from({ length: count }, (_, i) => {
         const lit = i === active;

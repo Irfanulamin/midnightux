@@ -12,16 +12,22 @@
  * launch, or canonicals and OG tags will point at the wrong host.
  */
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.midnightsurface.com"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.midnightux.com"
 ).replace(/\/$/, "");
 
-export const SITE_NAME = "Midnight Surface";
+/*
+ * The studio is MidnightUX, set as one word, which is how the logo draws it
+ * (the yellow "Studio" script is part of the mark, not part of the name). The
+ * other places the name is spelled out are the two logo assets, the chart's
+ * axis label in growth-chart.tsx and the footer email.
+ */
+export const SITE_NAME = "MidnightUX";
 
 export const SITE_TAGLINE =
   "Websites That Work as Hard as You Do";
 
 export const SITE_DESCRIPTION =
-  "Midnight Surface designs, builds, and launches professional websites for small businesses. Free first draft, $0 upfront, live in 5-7 days. WordPress, React and Next.js builds from $399.";
+  "MidnightUX designs, builds, and launches professional websites for small businesses. Free first draft, $0 upfront, live in 5-7 days. WordPress, React and Next.js builds from $399.";
 
 // Short, keyword-aware phrases the copy already stands behind — no invented
 // promises. Search engines mostly ignore the keywords tag now, but it is
