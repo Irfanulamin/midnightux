@@ -61,8 +61,16 @@ const offsetFor = (direction: Direction, distance: number) => {
  * requestAnimationFrame callback, not the effect body, which is both correct
  * (measure after paint) and what keeps it clear of the set-state-in-effect
  * rule.
+
+*
+ * Exported because a component that drives more than its own opacity off the
+ * trigger cannot use <Reveal> as a wrapper. WhyUsCard is the case: one boolean
+ * has to start the card's entrance AND the layered artwork inside it, so it
+ * needs the trigger rather than a component that consumes it. Anything reaching
+ * for this must keep the `passed` behaviour — that is the whole reason it is a
+ * shared hook and not a bare useInView.
  */
-function useReveal<T extends Element>(amount: number) {
+export function useReveal<T extends Element>(amount: number) {
   const ref = useRef<T>(null);
   const inView = useInView(ref, { once: true, amount });
   const [passed, setPassed] = useState(false);
