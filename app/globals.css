@@ -365,25 +365,33 @@ html body[data-scroll-locked] {
 }
 
 /*
- * Dot field that sits behind the hero.
+ * Ruled grid that sits behind the hero.
  *
  * The Figma (node 10:8437, the tile the hero background repeats) draws ruled
- * CELLS with a dot at every intersection. THE RULES ARE DELIBERATELY NOT DRAWN
- * HERE, by request: only the dots, on the design's cell pitch, so the card reads
- * as a dotted surface rather than as graph paper. Keep the cell vars if the
- * rules are ever wanted back — they set the spacing either way.
+ * CELLS with a dot at every intersection. THIS RULE DRAWS THE DOTS ONLY. The
+ * rules that connect them are SVG, in `GridRules`, and cannot come back here:
+ * a background gradient is never snapped to the device pixel grid, so hairlines
+ * painted this way land at a different subpixel phase on every line and read as
+ * randomly bolder and lighter. That file explains it at length.
  *
- * Every number below was measured off the export rather than chosen. The tile is
- * 463.667px square and divides 10 across by 11 down, which is where the cell size
- * comes from and why it is deliberately NOT square:
+ * The pitch was measured off the export rather than chosen. The tile is 463.667px
+ * square and divides 10 across by 11 down, which is where the cell size comes
+ * from and why it is deliberately NOT square:
  *
  *   463.667 / 10 = 46.367   cell width
  *   463.667 / 11 = 42.152   cell height
  *
  * Confirmed independently by counting rules in the 1440-wide background render:
  * 38.63px pitch horizontally and 35.10px vertically at that render's 1200/1440
- * scale, which is 46.36 x 42.12. Do not round these to a square cell; the grid
- * visibly drifts out of step with the design within a couple of screens.
+ * scale, which is 46.36 x 42.12.
+ *
+ * THE PITCH IS ROUNDED TO WHOLE PIXELS (46 x 42), and is the one measured value
+ * on the page deliberately not used as measured. It is rounded for the SVG rules
+ * rather than for the dots: crispEdges snaps each rule to the nearest device
+ * pixel, and on a fractional pitch that leaves the gaps alternating 46 / 47px.
+ * The cost is 0.8% / 0.36%, about a third of a cell across the whole 1420 card.
+ * KEEP THIS IN STEP WITH `CELL_W` / `CELL_H` in `grid-rules.tsx` — one
+ * measurement, two files — and keep the cell non-square.
  *
  * Ink has to be read off the COMPOSED hero, not off the tile. Sampling the tile
  * in isolation gives solid black dots, but it sits inside a mask group that
@@ -396,27 +404,42 @@ html body[data-scroll-locked] {
  *
  *   dot alpha   0.153 at the card top -> 0.122 at y=300 -> 0.039 at y=1060 -> 0
  *
- * which is linear, so it is expressed as a mask over one flat value rather than
- * as a stack of gradients. The uniform 0.08 this used to carry was that ramp's
- * average, and it read as a sheet of graph paper behind the whole hero instead
- * of a surface the copy rises off.
+ * That 0.153 is the DESIGN's top-of-ramp value and is kept here as the record of
+ * it; the dots are drawn at half of it, by request, now that the rules are there
+ * to carry the structure. The ramp itself is unchanged — halving the flat value
+ * scales the whole decay with it, which is the advantage of doing the fade as a
+ * mask.
+ *
+ * The ramp is linear, so it is expressed as a mask over one flat value rather
+ * than as a stack of gradients. An earlier version carried a flat 0.08 with no
+ * ramp at all — that ramp's average — and it read as a sheet of graph paper
+ * behind the whole hero instead of a surface the copy rises off. The rules ride
+ * the same mask, so they decay with the dots and vanish at the same place.
  *
  * Because the fade is a mask it CANNOT go on an element with content in it, or
  * the copy fades out with the dots. Put it on its own absolutely positioned
  * layer, as `Hero` does.
  *
  * The dot layer is offset by half a cell so a dot lands where the design's rules
- * would have crossed, rather than showing one quadrant in each tile corner.
+ * cross, rather than showing one quadrant in each tile corner.
  */
 .bg-dotgrid {
-  --grid-cell-w: 46.367px;
-  --grid-cell-h: 42.152px;
-  --grid-dot: rgb(0 0 0 / 0.153);
+  /* Whole pixels, on purpose — see above, and mirrored in `grid-rules.tsx`. */
+  --grid-cell-w: 46px;
+  --grid-cell-h: 42px;
+  /* Half the measured 0.153, by request — the field sits further back now. */
+  --grid-dot: rgb(0 0 0 / 0.0765);
 
   /* Figma's ramp hits zero just past the card's bottom edge, at ~103%. */
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 103%);
   mask-image: linear-gradient(to bottom, #000 0%, transparent 103%);
 
+  /*
+   * Offset half a cell and drawn `at center`, which puts the dot centres on
+   * MULTIPLES OF THE CELL (0, w, 2w, ...) rather than on the half-offsets — the
+   * same multiples `GridRules` draws its lines on, which is what makes a rule
+   * run through a dot instead of past it.
+   */
   background-image: radial-gradient(
     circle at center,
     var(--grid-dot) 2px,
@@ -425,4 +448,24 @@ html body[data-scroll-locked] {
   background-position: calc(var(--grid-cell-w) / 2)
     calc(var(--grid-cell-h) / 2);
   background-size: var(--grid-cell-w) var(--grid-cell-h);
+}
+
+/*
+ * How thin the rules go is a property of the DISPLAY, not of the design.
+ *
+ * `GridRules` draws with shape-rendering: crispEdges, which snaps every rule to
+ * whole device pixels — that is what stopped them reading as randomly bolder and
+ * lighter. One device pixel is therefore the floor: ask for less and the browser
+ * either rounds back up to one or drops the line, and either way the uniformity
+ * goes with it.
+ *
+ * On a 1x screen 1px IS that one device pixel, so the rules are already as thin
+ * as a rule gets and the only lever left is stroke-opacity (set in the
+ * component). On 2x the same 1px is TWO device pixels and can be halved for
+ * real, which is what this does.
+ */
+@media (min-resolution: 2dppx) {
+  .grid-rules {
+    stroke-width: 0.5px;
+  }
 }

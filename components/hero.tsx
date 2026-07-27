@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { GrowthChart } from "@/components/growth-chart";
 import { Button, ButtonLabel } from "@/components/ui/button";
+import { GridRules } from "@/components/ui/grid-rules";
 import { RevealGroup, RevealItem } from "@/components/ui/reveal";
 import { TextReveal } from "@/components/ui/text-reveal";
 
@@ -15,8 +16,8 @@ import { TextReveal } from "@/components/ui/text-reveal";
  * and closes on the same shape.
  *
  * The design fills the card with a ruled grid AND a dot at every intersection.
- * The rules are dropped by request and the dots are kept, so what is left is a
- * plain dot field on white, fading out towards the foot of the card.
+ * Both are drawn (see .bg-dotgrid), the rules as a hairline connecting the dots,
+ * the whole field fading out towards the foot of the card.
  *
  * The negative top margin is what puts the nav bar INSIDE that card, where the
  * design has it, rather than on the cream page behind it. It is the header's
@@ -71,7 +72,15 @@ export function Hero() {
         <div
           aria-hidden
           className="bg-dotgrid pointer-events-none absolute inset-0"
-        />
+        >
+          {/*
+            The rules go INSIDE the masked layer, not beside it, so they fade on
+            the same ramp as the dots and reach nothing at the same place. They
+            are SVG rather than more background-image because only SVG can be
+            told to snap to the pixel grid - see grid-rules.tsx.
+          */}
+          <GridRules />
+        </div>
 
         <div className="relative mx-auto max-w-[1160px] text-center">
           {/*
