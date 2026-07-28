@@ -89,11 +89,12 @@ export function WhyUsCard({
    * Scroll-linked drift for the artwork's subject. Measured on the card, handed
    * to the art, so the SVG has no scroll wiring of its own.
    *
-   * The spring is what stops it reading as nailed to the scrollbar — the same
-   * reasoning, and the same constants, as components/ui/parallax.tsx. That
-   * primitive is not reused directly because it wraps its child in a div, and
-   * this value has to reach an SVG <g> inside the card rather than a box around
-   * it.
+   * The spring is what stops it reading as nailed to the scrollbar. There used
+   * to be a shared ui/parallax.tsx carrying the same reasoning and the same
+   * constants, which this could not reuse anyway: that primitive wrapped its
+   * child in a div, and this value has to reach an SVG <g> inside the card
+   * rather than a box around it. Nothing else ever adopted it, so it was
+   * removed and this is now the only scroll-linked drift on the page.
    */
   const { scrollYProgress } = useScroll({
     target: cardRef,

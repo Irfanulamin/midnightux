@@ -50,8 +50,8 @@ const AUTOPLAY_DELAY = 5200;
  * separate timer and hoping the two resume together.
  *
  * The bar renders inside every slide because the design puts it in the card,
- * so only the current slide's bar is wired up — all three animate, but three
- * `animationend` handlers would advance the carousel three times.
+ * so only the current slide's bar is wired up — they all animate, but a handler
+ * on each would advance the carousel once per slide.
  *
  * Under reduced motion there is no animation, so there is nothing to end and
  * the carousel never moves on its own. It stays fully usable by drag and
@@ -79,6 +79,24 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: "all" });
 
+  /*
+   * Clamped, because this index can outlive the list it was taken from.
+   *
+   * `selected` is Embla's snap index held in React state, and it is not
+   * re-derived when `items` changes - Fast Refresh in particular preserves
+   * state across a hot update, so editing this file from three testimonials
+   * down to two left `selected` sitting at 2 with only 0 and 1 remaining.
+   *
+   * That single stale number breaks three things at once, which is worth
+   * spelling out because none of them look related: the counter reads "03" of
+   * "02"; `i === current` matches no slide, so no progress bar carries the
+   * advance handler and the autoplay stops dead on the last quote; and the
+   * `key` never matches a real slide either. Clamping fixes all three, and it
+   * is correct beyond hot reloads - any future change to the number of
+   * testimonials would hit the same edge on a live page.
+   */
+  const current = Math.min(selected, items.length - 1);
+
   useEffect(() => {
     if (!api) return;
     // Subscribe only. Embla starts on slide 0, which is what `selected`
@@ -96,9 +114,23 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
     /* `group` is what lets the countdown bar pause when the pointer is over
        the carousel. */
     <div ref={ref} className="group mt-10 sm:mt-16">
+      {/*
+        Loop only once there are more than two slides.
+
+        Embla builds a loop by translating the real slides around the viewport
+        rather than cloning them, which needs enough total width to keep a slide
+        under the viewport at all times. At one slide per view, two slides is
+        not enough: to close the loop it has to reposition the slide you just
+        left back onto the far side, so it reappears as an apparent third and
+        the set reads as A, B, A. That is the duplicate.
+
+        Below the threshold the loop is off and the wrap is done by hand in the
+        advance handler, which costs one reverse scroll at the end and shows
+        each person exactly once.
+      */}
       <Carousel
         setApi={setApi}
-        opts={{ loop: true, align: "start", duration: 32 }}
+        opts={{ loop: items.length > 2, align: "start", duration: 32 }}
         className="w-full"
       >
         {/*
@@ -136,17 +168,29 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                   explicit for the same reason -- with it absent the browser assumes
                   100vw and picks candidates for a box far wider than this ever is.
 
-                  See also the width/height note in testimonials.tsx: the Johnson
-                  Smith entry declared the DISPLAY box (287x405) as the file's
-                  intrinsic size when the export is really 535x830, which capped
-                  that slide's resolution on its own.
+                  `sizes` is 405, NOT the 287 of the box, and the difference is
+                  the whole reason these looked soft.
+
+                  `sizes` has to describe how much image data is needed, and
+                  under object-cover that is the COVERED size, not the box. The
+                  portraits this was written for were taller than 287/405, so
+                  cover scaled them to the box width and 287 was right. The
+                  photos are 1:1 now, so cover scales them to the box HEIGHT:
+                  they render 405 x 405 and get cropped to 287 wide. Asking for
+                  287 therefore under-requests by ~41%, and on a 2x screen the
+                  browser picked a 640px candidate to fill an 810px render and
+                  upscaled it. 405 makes it choose 828 instead.
+
+                  Anything replacing these photos should re-check this number:
+                  it is a function of the source's aspect against 287/405, not
+                  a constant.
                 */}
                 <Image
                   src={item.image}
                   alt={item.name}
                   width={item.width}
                   height={item.height}
-                  sizes="287px"
+                  sizes="405px"
                   className="mx-auto aspect-[287/405] w-full max-w-[287px] shrink-0 rounded-2xl object-cover object-center md:mx-0 md:aspect-auto md:h-[405px]"
                 />
 
@@ -183,7 +227,7 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
 
                     <div className="flex shrink-0 items-center gap-3 text-[14px]">
                       <span className="text-ink tabular-nums">
-                        {pad(selected + 1)}
+                        {pad(current + 1)}
                       </span>
                       {/*
                         `key` is what makes this a countdown. Remounting the
@@ -198,9 +242,9 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                         the set you are.
                       */}
                       <Progress
-                        key={selected}
+                        key={current}
                         value={
-                          reduce ? ((selected + 1) / items.length) * 100 : 0
+                          reduce ? ((current + 1) / items.length) * 100 : 0
                         }
                         indicatorClassName={
                           reduce
@@ -216,16 +260,31 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                         }
                         /*
                           Only the visible slide's bar advances the carousel.
-                          All three fill together, and three handlers would
-                          scroll three slides at once. `animationend` bubbles,
-                          so catching it on the root picks up the fill inside.
+                          Every slide's bar fills, and one handler each would
+                          scroll that many slides at once. `animationend`
+                          bubbles, so catching it on the root picks up the fill
+                          inside.
+
+                          It scrolls to an explicit index rather than calling
+                          scrollNext, because scrollNext is a no-op at the end
+                          of a non-looping carousel - and the loop is off at two
+                          slides (see the Carousel opts). The bar has already
+                          fired its one animationend by then, so nothing would
+                          ever restart it and the autoplay just died on the last
+                          quote.
+
+                          `(current + 1) % items.length` has no such end: it
+                          wraps by arithmetic, so it behaves the same whether
+                          the loop is on or off and cannot get stuck at any
+                          number of slides.
                         */
                         onAnimationEnd={
-                          i === selected
-                            ? () => api?.scrollNext()
+                          i === current
+                            ? () =>
+                                api?.scrollTo((current + 1) % items.length)
                             : undefined
                         }
-                        aria-label={`Testimonial ${selected + 1} of ${items.length}`}
+                        aria-label={`Testimonial ${current + 1} of ${items.length}`}
                         className="w-16 sm:w-20"
                       />
                       <span className="text-ink/40 tabular-nums">

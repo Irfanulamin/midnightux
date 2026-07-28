@@ -8,7 +8,13 @@ import { MaskReveal } from "@/components/ui/text-reveal";
 
 export function CtaBanner() {
   return (
-    <section className="px-6 pb-16 sm:pb-20 md:pb-28">
+    /*
+      The header's "Get a Free Consultation" lands here, so the section needs an
+      id. scroll-mt-24 matches the HEADER_OFFSET (96) that SmoothScroll applies,
+      and is the fallback that keeps the banner clear of the fixed bar if Lenis
+      is not running - same pairing as every other anchored section.
+    */
+    <section id="contact" className="scroll-mt-24 px-6 pb-16 sm:pb-20 md:pb-28">
       <Reveal className="relative mx-auto max-w-[1160px] overflow-hidden rounded-[24px] bg-[#28706d] px-6 py-12 text-white sm:px-10 sm:py-16 md:px-14 md:py-20">
         {/*
           Three layers, bottom up: the flat #28706d card, the grid, then the

@@ -16,6 +16,15 @@
   --color-rule: #e8e7e5;
   --color-ink: #101010;
   --color-ink-muted: #6b6b6b;
+  /*
+   * NOT sampled from the export - the frame has no dark tile to sample. This is
+   * an interaction surface, added for the Trusted By logo hover, where the tile
+   * has to go dark enough for a white-on-transparent client mark to read.
+   * #101010 is the page's absolute black and lands like a hole punched in a row
+   * of cream; this is lifted off it and warmed a little toward the cream family
+   * so it reads as a softened black rather than a grey. Still 15:1 on white.
+   */
+  --color-ink-soft: #2a2724;
 
   --color-yellow: #ffe273;
   --color-yellow-strong: #f5d24f;
@@ -356,9 +365,68 @@ html.lenis body {
   }
 }
 
+/*
+ * Project dialog (radix Dialog, centred rather than edge-anchored).
+ *
+ * Same `animationend` constraint as the Sheet above, so these are keyframes and
+ * not transitions. It rises a few px while it scales, because a pure scale from
+ * the centre reads as a zoom and a small upward drift reads as something being
+ * brought forward. 0.97 rather than 0.9: the panel is most of the screen, and
+ * scaling something that large from 0.9 is a lurch.
+ */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/*
+ * The dialog's own scroller carries a full-page screenshot several thousand px
+ * tall, so it always has a scrollbar. The platform default is a wide light-grey
+ * bar sitting inside a rounded cream panel, which is the one part of this page
+ * that would look borrowed from the OS. Narrowed and tinted to the page's ink
+ * instead. `scrollbar-width`/`scrollbar-color` cover Firefox, the ::-webkit
+ * rules cover Chrome and Safari.
+ */
+[data-slot="dialog-scroll"] {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-ink) 22%, transparent)
+    transparent;
+}
+[data-slot="dialog-scroll"]::-webkit-scrollbar {
+  width: 8px;
+}
+[data-slot="dialog-scroll"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-slot="dialog-scroll"]::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-ink) 22%, transparent);
+}
+[data-slot="dialog-scroll"]::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-ink) 34%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-slot="sheet-overlay"],
-  [data-slot="sheet-content"] {
+  [data-slot="sheet-content"],
+  [data-slot="dialog-overlay"],
+  [data-slot="dialog-content"] {
     animation: none !important;
   }
 }

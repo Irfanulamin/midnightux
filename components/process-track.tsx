@@ -114,24 +114,47 @@ export function ProcessCarousel({
           <div
             key={step.n}
             /*
-              pt-[26px] on top of the track's own mt-6 puts 50px between the
-              rule and a resting card, which is the design's gap.
+              pt-[44px] on top of the track's own mt-6 puts 68px between the
+              rule and a resting card.
+
+              The design's own gap was 50px, and this deliberately opens it up.
+              The whole point of the move is the contrast between the step that
+              has crossed the line and the ones that have not, and at 50px below
+              / 51px above the two states sat almost symmetrically about the
+              rule, which read as a wobble rather than as one card singled out.
+              Dropping the resting cards and raising the active one further
+              separates the two states instead of just offsetting them.
             */
-            className="w-full md:w-[360px] md:shrink-0 md:pt-[26px] lg:min-w-[360px] pin-short:pt-3 pin-tight:pt-1.5"
+            className="w-full md:w-[360px] md:shrink-0 md:pt-[44px] lg:min-w-[360px] pin-short:pt-8 pin-tight:pt-2"
           >
             {/*
               No border and no shadow, active or not: in the Figma the active
               card is a flat yellow plane; the raise alone does the separating.
 
-              The raise is the design's line-crossing move — at rest the cards
-              sit 40px below the rule that ends the header (track mt-6 + this
-              wrapper's pt-4), and the active card translates up 64px, putting
-              its top edge 24px above the rule. In the Figma the geometry is
-              50px below / 51px above on a 562px card; ours is scaled to the
-              viewport-constrained card height. The track paints after the
-              header, so the raised card covers the rule rather than sliding
-              under it. Below md there is no rule to cross, so the lift stays
-              at the subtle 12px.
+              The raise is the design's line-crossing move. At rest the cards
+              sit 68px below the rule that ends the header (track mt-6 + this
+              wrapper's pt-[44px]); the active card lifts 136px at lg, putting
+              its top edge 68px above the rule. Equal distance either side, so
+              the lit step reads as having crossed a threshold rather than
+              having nudged upward - the Figma's tighter 50px below / 51px above
+              left the two states nearly symmetrical about the rule at this card
+              size, which read as a wobble. The track paints after the header,
+              so the raised card covers the rule rather than sliding under it.
+              Below md there is no rule to cross, so the lift stays at the
+              subtle 12px.
+
+              The lift scales with the room above the card, since that is where
+              it has to come from: 136px at lg, 92px at md AND at pin-short, 44
+              under pin-tight where a full lift would carry the card's top edge
+              off the top of the pin.
+
+              pin-short carrying nearly the full lift is the important one and
+              was originally the bug. It is `max-height: 1079px`, so practically
+              every laptop is inside it - a 1440x900 has about 800px of viewport
+              - which means the lg numbers are the ones almost nobody sees.
+              Measured at 800px of viewport the column comes to ~698px, leaving
+              ~51px of slack above it, so the card's top edge starts ~125px down
+              and a 92px lift still clears the top of the pin by ~33px.
 
               700ms, not the 500ms used elsewhere: this transition is the
               storytelling beat, so it wants to be seen rather than snapped
@@ -188,7 +211,7 @@ export function ProcessCarousel({
                 refs.current[i] = el;
               }}
               data-active={active}
-              className="group relative flex min-h-[470px] w-full flex-col overflow-hidden rounded-lg bg-cream-light p-6 pt-8 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] data-[active=true]:bg-yellow motion-safe:data-[active=true]:-translate-y-3 sm:p-[30px] sm:pt-[70px] md:min-h-[510px] md:motion-safe:data-[active=true]:-translate-y-16 lg:h-[562px] lg:w-[360px] lg:motion-safe:data-[active=true]:-translate-y-[101px] pin-short:pt-[30px] pin-short:motion-safe:data-[active=true]:-translate-y-10 pin-tight:motion-safe:data-[active=true]:-translate-y-6"
+              className="group relative flex min-h-[470px] w-full flex-col overflow-hidden rounded-lg bg-cream-light p-6 pt-8 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] data-[active=true]:bg-yellow motion-safe:data-[active=true]:-translate-y-3 sm:p-[30px] sm:pt-[70px] md:min-h-[510px] md:motion-safe:data-[active=true]:-translate-y-[92px] lg:h-[562px] lg:w-[360px] lg:motion-safe:data-[active=true]:-translate-y-[136px] pin-short:pt-[30px] pin-short:motion-safe:data-[active=true]:-translate-y-[92px] pin-tight:motion-safe:data-[active=true]:-translate-y-11"
             >
               <p className="text-[14px] font-semibold tracking-[0.05em] text-[#399e98]/50 transition-colors duration-700 group-data-[active=true]:text-teal/70 sm:text-[16px]">
                 /STEPS

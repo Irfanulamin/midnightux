@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { GrowthChart } from "@/components/growth-chart";
 import { Button, ButtonLabel } from "@/components/ui/button";
 import { GridRules } from "@/components/ui/grid-rules";
@@ -116,9 +114,15 @@ export function Hero() {
                   asChild
                   className="font-semibold sm:h-[55px] sm:px-5 sm:text-[16px]"
                 >
-                  <Link href="/contact">
-                    <ButtonLabel>Get a Free Consultation</ButtonLabel>
-                  </Link>
+                  {/*
+                    In-page jump to How It Works, so plain <a> and not
+                    next/link: Link intercepts a same-page hash and runs its own
+                    scroll, which fights Lenis. SmoothScroll's delegated
+                    listener handles it. Same call as the header CTA.
+                  */}
+                  <a href="#process">
+                    <ButtonLabel>Our Process</ButtonLabel>
+                  </a>
                 </Button>
                 <Button
                   asChild

@@ -8,48 +8,63 @@ import {
 import { Reveal } from "@/components/ui/reveal";
 
 /*
- * Realistic placeholder quotes: one concrete outcome each, short enough to read
- * in a glance. Names and companies are fictional; swap in real ones when you
- * have them.
+ * REAL testimonials. The three fictional ones that used to stand in here
+ * (Johnson Smith, Alexis John, Max Francisco) and their three portraits were
+ * removed outright, so nothing invented is left in this section to be mistaken
+ * for genuine.
+ *
+ * Each quote was given verbatim about the studio's founder by name. The subject
+ * on this page is the studio, so the name is swapped for MidnightUX and the
+ * pronouns follow it; the per-entry comments record the original wording so the
+ * edit stays auditable against what the client actually said.
+ *
+ * Both photos are 1000x1000, where the previous exports were portraits at
+ * 0.645 / 0.733 / 0.778. That is an improvement rather than a problem: the
+ * carousel frames every slide in the design's 287 x 405 box with object-cover,
+ * so identical square sources mean identical geometry and an identical crop on
+ * both slides, which is exactly what the three mismatched aspects used to
+ * break. The cover crop takes ~29% off the width, centred - which also removes
+ * the rounded corners baked into the alysa source, so they never reach screen.
+ *
+ * WebP, and sharpened. The supplied PNGs were soft, and a light unsharp mask
+ * (sigma 1.2) recovers most of it at this render size. Sharpening makes PNG
+ * bigger, not smaller - it doubled them to ~1.5MB each - so they are stored as
+ * quality-92 WebP instead: visually identical, 65KB apiece.
  */
 const testimonials: Testimonial[] = [
   {
-    name: "Johnson Smith",
-    role: "Founder, Loomcraft Studio",
-    rating: "10/10",
-    quote:
-      "They showed me a homepage before I paid a cent, and it already beat the site I had been putting off for two years. We were live the week after.",
-    image: "/design/testimonial-johnson-smith.png",
+    name: "Adm",
+    role: "Founder & CEO, TheBLK Agency",
+    rating: "9/10",
     /*
-     * 535 x 830, measured off the file. It was declared 287 x 405 (the design's
-     * display box, not the export), and next/image treats these as the source's
-     * INTRINSIC size: it caps the width it will serve at that figure and derives
-     * the reserved aspect from it. So this slide was pinned to 287px when 535 was
-     * available, and to a 0.709 aspect when the file is 0.645, which is most of
-     * why it looked softer and framed differently from the other two.
+     * Given verbatim as "Kazi is the best, hands down one of the best at what
+     * he does." The subject is the studio rather than the individual here, so
+     * the name is swapped for MidnightUX and the pronoun with it - which also
+     * takes "does" to "do", since "they" needs the plural verb.
      */
-    width: 535,
-    height: 830,
-  },
-  {
-    name: "Alexis John",
-    role: "Founder, Northbend Coffee",
-    rating: "9.5/10",
     quote:
-      "We had the new site and a working booking form live in nine days. Enquiries have not dropped off since.",
-    image: "/design/testimonial-alexis-john.png",
-    width: 463,
-    height: 632,
+      "MidnightUX is the best, hands down one of the best at what they do.",
+    image: "/testimonial/adm.webp",
+    width: 1000,
+    height: 1000,
   },
   {
-    name: "Max Francisco",
-    role: "Director, Halden Strength",
+    name: "Alysa",
+    role: "Senior UX Writer & Team Lead, Avast Software",
     rating: "10/10",
+    /*
+     * Given verbatim as "It was a wonderful experience working with Kazi. He's
+     * incredibly talented and patient and knows what he is doing. I highly
+     * recommend him to anyone looking for great UX designs." Same treatment as
+     * the quote above: the studio is the subject, so Kazi becomes MidnightUX
+     * and the pronouns follow it - he's/he/him to they're/they/them, and
+     * "knows" to "know" to agree with the plural.
+     */
     quote:
-      "They rebuilt the pages around how members actually use them. Sign-ups climbed without us changing anything else.",
-    image: "/design/testimonial-max-francisco.png",
-    width: 736,
-    height: 946,
+      "It was a wonderful experience working with MidnightUX. They're incredibly talented and patient and know what they are doing. I highly recommend them to anyone looking for great UX designs.",
+    image: "/testimonial/alysa.webp",
+    width: 1000,
+    height: 1000,
   },
 ];
 

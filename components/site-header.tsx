@@ -130,8 +130,16 @@ export function SiteHeader() {
           fit on one line — they wrapped to two rows and ran straight through
           the wordmark. Tablets get the menu button.
         */}
-        {/* Figma sets the links 24px apart, not 28. */}
-        <ul className="hidden items-center gap-6 lg:flex">
+        {/*
+          Figma sets the links 24px apart, not 28 - which is what xl restores.
+          16px between lg and xl because the CTA beside them is now "Get a Free
+          Consultation" rather than "Get Started", roughly twice the width, and
+          at 1024 the logo, five 18px labels and that pill come to within ~40px
+          of the bar. Buying back 32px here and 16px on the pill's padding keeps
+          it on one line without touching the measured 18px type, which is the
+          thing that would actually be noticed.
+        */}
+        <ul className="hidden items-center gap-4 lg:flex xl:gap-6">
           {navLinks.map((link) => (
             <li key={link.href}>
               <a
@@ -167,14 +175,19 @@ export function SiteHeader() {
           <Button
             asChild
             size="sm"
-            className="h-10 font-semibold hover:-translate-y-0.5 sm:h-[51px] sm:px-6 sm:text-[16px]"
+            /* lg:px-4 is part of keeping the bar on one line - see the nav ul. */
+            className="h-10 font-semibold hover:-translate-y-0.5 sm:h-[51px] sm:px-6 sm:text-[16px] lg:px-4 xl:px-6"
           >
             {/*
-              An in-page jump to Pricing, so plain <a> and not next/link: Link
-              intercepts a same-page hash and runs its own scroll, which fights
-              Lenis. The delegated listener in SmoothScroll handles it.
+              An in-page jump to the CTA banner, so plain <a> and not next/link:
+              Link intercepts a same-page hash and runs its own scroll, which
+              fights Lenis. The delegated listener in SmoothScroll handles it.
+
+              #contact, not #pricing: the label promises a conversation, and
+              pricing is a table of numbers. The banner is where the free draft,
+              the $0 upfront and the Contact Us button actually are.
             */}
-            <a href="#pricing">Get Started</a>
+            <a href="#contact">Get a Free Consultation</a>
           </Button>
 
           {/*
@@ -211,8 +224,8 @@ export function SiteHeader() {
               </nav>
 
               <Button asChild size="block" className="mt-6 font-semibold">
-                <a href="#pricing" onClick={() => setMenuOpen(false)}>
-                  Get Started
+                <a href="#contact" onClick={() => setMenuOpen(false)}>
+                  Get a Free Consultation
                 </a>
               </Button>
             </SheetContent>

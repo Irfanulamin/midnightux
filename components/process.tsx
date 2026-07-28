@@ -105,8 +105,21 @@ export function Process() {
       />
 
       <ProcessCarousel
-        /* 2px rule above the carousel, sampled at #e8e7e5 in the Figma. */
-        header={<div className="h-0.5 w-full bg-rule" />}
+        /*
+          2px rule above the carousel, sampled at #e8e7e5 in the Figma.
+
+          The md margin drops the rule down the pinned viewport. The pinned
+          column is centred, so the margin is shared: the group grows by the
+          full amount and re-centres, moving the rule down by half of it and
+          carrying the cards with it. mt-8 therefore reads as about 16px lower.
+
+          Clawed back under pin-short/pin-tight, where the column is already
+          fighting for the card's full height and 16px of air above the rule is
+          the cheapest thing in it to give up.
+        */
+        header={
+          <div className="h-0.5 w-full bg-rule md:mt-8 pin-short:mt-3 pin-tight:mt-0" />
+        }
         steps={steps.map((step) => ({
           n: step.n,
           title: step.title,

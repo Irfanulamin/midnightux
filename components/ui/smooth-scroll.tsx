@@ -32,8 +32,9 @@ let activeLenis: Lenis | null = null;
  *
  * Lenis intercepts wheel/touch input and eases the real window scroll position
  * toward the target, so everything already reading scroll — ScrollTrigger's pin
- * in <HorizontalPan>, Motion's useScroll in the header and <Parallax> — inherits
- * the smoothing for free. Nothing downstream needs to know Lenis exists.
+ * in <HorizontalPan>, Motion's useScroll in the header and in the Why Us card's
+ * drift — inherits the smoothing for free. Nothing downstream needs to know
+ * Lenis exists.
  *
  * Three wiring details carry the whole thing:
  *

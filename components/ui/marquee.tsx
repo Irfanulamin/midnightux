@@ -93,8 +93,28 @@ export function Marquee({
         modifiers: { x: wrapX },
       });
 
-      const pause = () => tween.pause();
-      const play = () => tween.play();
+      /*
+       * Hover does not pause the tween, it ramps its timeScale to 0.
+       *
+       * `tween.pause()` removes all of the strip's velocity on a single frame,
+       * and at ~70px/sec that reads as the page hitching rather than as the
+       * strip responding to the cursor - the eye is tracking a moving row, and
+       * the row is simply not where the next frame says it is. Easing the rate
+       * down lets it coast to a standstill over ~0.7s, so the cursor looks like
+       * it slowed the strip rather than broke it, and the ramp back up hides
+       * the same discontinuity on the way out.
+       *
+       * `overwrite: true` matters here: pointer in/out inside the ramp window
+       * is normal (a cursor crossing the strip does it constantly), and without
+       * it the two rate tweens run at once and fight over timeScale.
+       */
+      const rampTo = (value: number, duration: number) =>
+        gsap.to(tween, { timeScale: value, duration, ease: "power2.out", overwrite: true });
+
+      // Out is slower than in: stopping should feel like it settles, starting
+      // again should not feel like it is reluctant to.
+      const pause = () => rampTo(0, 0.7);
+      const play = () => rampTo(1, 0.5);
       container?.addEventListener("pointerenter", pause);
       container?.addEventListener("pointerleave", play);
 
