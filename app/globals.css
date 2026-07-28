@@ -212,6 +212,25 @@ html.lenis body {
 @custom-variant pin-short (@media (min-width: 768px) and (max-height: 1079px));
 
 /*
+ * The second tier, and the one that stops the card being cut off at the top.
+ *
+ * Measured at 1440 wide: `pin-short` leaves 34px of chrome above the card (pin
+ * padding, the rule, the track margin, the wrapper's pt) and 54px below it (the
+ * dots and their gap), so the column stands 650px around a 562px card. The
+ * pinned block is centred, which means a viewport shorter than that loses the
+ * overflow off BOTH ends — and the active card is lifted another 40px to cross
+ * the rule, so the top is what goes first. It clips below ~662px of viewport:
+ * a 1366x768 laptop with a browser on it lands squarely inside that.
+ *
+ * THE CARD DOES NOT SHRINK. What gives is the room around it — the padding is
+ * trimmed again, the lift is cut to 24px (still far enough to cross the rule,
+ * which sits 14px above a resting card here), and the dots, decorative and
+ * already aria-hidden, are dropped. That leaves the column at 594px, so the
+ * design's card survives intact down to a 600px viewport.
+ */
+@custom-variant pin-tight (@media (min-width: 768px) and (max-height: 679px));
+
+/*
  * Carousel autoplay countdown.
  *
  * The bar is not a "slide 2 of 3" indicator — it fills across the life of the

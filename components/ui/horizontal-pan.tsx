@@ -143,7 +143,7 @@ export function HorizontalPan({
         The padding yields before the content does.
       */}
       <div
-        className={`flex flex-col py-16 md:h-[100dvh] md:py-10 pin-short:py-4 ${
+        className={`flex flex-col py-16 md:h-[100dvh] md:py-10 pin-short:py-4 pin-tight:py-2 ${
           centered ? "md:justify-center" : ""
         }`}
       >
@@ -158,7 +158,7 @@ export function HorizontalPan({
         */}
         <div
           ref={trackRef}
-          className={`mt-10 flex flex-col px-6 md:mt-6 md:w-max md:flex-row md:px-0 md:pl-[88vw] pin-short:mt-3 ${
+          className={`mt-10 flex flex-col px-6 md:mt-6 md:w-max md:flex-row md:px-0 md:pl-[88vw] pin-short:mt-3 pin-tight:mt-2 ${
             centered ? "md:shrink-0" : "md:min-h-0 md:flex-1"
           } ${trailClassName} ${gapClassName}`}
         >

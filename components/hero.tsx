@@ -125,9 +125,10 @@ export function Hero() {
                   variant="surface"
                   className="font-semibold sm:h-[55px] sm:px-5 sm:text-[16px]"
                 >
-                  <Link href="/work">
+                  {/* In-page jump, so plain <a> — see the header CTA. */}
+                  <a href="#work">
                     <ButtonLabel>View Our Work</ButtonLabel>
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </RevealItem>

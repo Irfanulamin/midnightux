@@ -58,11 +58,23 @@ export function OurWork() {
         bodyClassName="mt-6 max-w-[640px] text-ink-muted"
       />
 
+      {/*
+        Card width scales with viewport HEIGHT, not width, because the crop is a
+        height problem: the pin is 100dvh and the shot fills it, so on a 27"
+        monitor (~1300px of viewport) a 420px card gave the media a 0.38 aspect
+        against the screenshot's 0.916 and object-cover ate most of the width -
+        the headline was cut off at both edges.
+
+        Clamped 420-560: 420 is the Figma card and the floor short laptops keep,
+        560 is as wide as a card can get before four of them stop reading as a
+        row. justify-center then puts the leftover height above and below the
+        card rather than dumping it all underneath.
+      */}
       <HorizontalPan>
         {projects.map((project, index) => (
           <article
             key={index}
-            className="flex w-full flex-col md:h-full md:w-[420px] md:shrink-0"
+            className="flex w-full flex-col md:h-full md:w-[clamp(420px,46dvh,560px)] md:shrink-0 md:justify-center"
           >
             {/*
               Each shot is covered by a teal panel that lifts away as the card
@@ -70,8 +82,15 @@ export function OurWork() {
               rounded-xl lives on the wrapper so the cover is clipped to the
               same corners as the image beneath it.
             */}
+            {/*
+              max-h is the card width divided by the shot's 1853/2023 ratio
+              (width x 1.0917), tracking the clamp above. It is the cap that
+              stops object-cover cropping sideways: flex-1 still hands the media
+              whatever height a short viewport has left (so it always fits), but
+              it can never grow taller than the width can honestly carry.
+            */}
             <CurtainReveal
-              className="rounded-xl md:min-h-0 md:flex-1"
+              className="rounded-xl md:min-h-0 md:max-h-[clamp(459px,50.2dvh,611px)] md:flex-1"
               delay={0.05}
             >
               {/*

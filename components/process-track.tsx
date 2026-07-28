@@ -117,7 +117,7 @@ export function ProcessCarousel({
               pt-[26px] on top of the track's own mt-6 puts 50px between the
               rule and a resting card, which is the design's gap.
             */
-            className="w-full md:w-[360px] md:shrink-0 md:pt-[26px] lg:min-w-[360px] pin-short:pt-3"
+            className="w-full md:w-[360px] md:shrink-0 md:pt-[26px] lg:min-w-[360px] pin-short:pt-3 pin-tight:pt-1.5"
           >
             {/*
               No border and no shadow, active or not: in the Figma the active
@@ -174,17 +174,21 @@ export function ProcessCarousel({
                 pt-26  -> pt-3    14   (this wrapper)
                 mt-16  -> mt-6    40   (the dots)
 
-              114px back, so the whole column fits from about 640px of viewport
+              114px back, so the whole column fits from about 662px of viewport
               height. Below that the design's card and its dots genuinely cannot
               share one screen, and the dots — decorative, aria-hidden — are what
-              goes first.
+              goes first: `pin-tight` (globals.css, under 680px) drops them,
+              trims the padding again and cuts the lift to 24px, which carries
+              the full-size card down to a 600px viewport. Without it the centred
+              column overflowed both ends and the LIFTED card lost its top edge,
+              which is the "cut off at the top" a 1366x768 laptop showed.
             */}
             <article
               ref={(el) => {
                 refs.current[i] = el;
               }}
               data-active={active}
-              className="group relative flex min-h-[470px] w-full flex-col overflow-hidden rounded-lg bg-cream-light p-6 pt-8 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] data-[active=true]:bg-yellow motion-safe:data-[active=true]:-translate-y-3 sm:p-[30px] sm:pt-[70px] md:min-h-[510px] md:motion-safe:data-[active=true]:-translate-y-16 lg:h-[562px] lg:w-[360px] lg:motion-safe:data-[active=true]:-translate-y-[101px] pin-short:pt-[30px] pin-short:motion-safe:data-[active=true]:-translate-y-10"
+              className="group relative flex min-h-[470px] w-full flex-col overflow-hidden rounded-lg bg-cream-light p-6 pt-8 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] data-[active=true]:bg-yellow motion-safe:data-[active=true]:-translate-y-3 sm:p-[30px] sm:pt-[70px] md:min-h-[510px] md:motion-safe:data-[active=true]:-translate-y-16 lg:h-[562px] lg:w-[360px] lg:motion-safe:data-[active=true]:-translate-y-[101px] pin-short:pt-[30px] pin-short:motion-safe:data-[active=true]:-translate-y-10 pin-tight:motion-safe:data-[active=true]:-translate-y-6"
             >
               <p className="text-[14px] font-semibold tracking-[0.05em] text-[#399e98]/50 transition-colors duration-700 group-data-[active=true]:text-teal/70 sm:text-[16px]">
                 /STEPS
@@ -227,8 +231,13 @@ function Dots({ count, active }: { count: number; active: number }) {
         64px below the cards at md, which is the design's gap, cut to 24 on a
         pinned viewport short enough that the design's gap would push the dots
         off the bottom of the pin - see the card's note.
+
+        Below `pin-tight` they go entirely. They and their gap are the last 46px
+        of the column, and dropping them is what buys the card its full 562px
+        without the lift running off the top of the screen. Decorative and
+        aria-hidden, so nothing is lost but the paging read.
       */
-      className="mt-8 hidden shrink-0 items-center justify-center gap-3 md:mt-16 md:flex pin-short:mt-6"
+      className="mt-8 hidden shrink-0 items-center justify-center gap-3 md:mt-16 md:flex pin-short:mt-6 pin-tight:hidden"
     >
       {Array.from({ length: count }, (_, i) => {
         const lit = i === active;

@@ -169,7 +169,12 @@ export function SiteHeader() {
             size="sm"
             className="h-10 font-semibold hover:-translate-y-0.5 sm:h-[51px] sm:px-6 sm:text-[16px]"
           >
-            <Link href="/contact">Get Started</Link>
+            {/*
+              An in-page jump to Pricing, so plain <a> and not next/link: Link
+              intercepts a same-page hash and runs its own scroll, which fights
+              Lenis. The delegated listener in SmoothScroll handles it.
+            */}
+            <a href="#pricing">Get Started</a>
           </Button>
 
           {/*
@@ -206,9 +211,9 @@ export function SiteHeader() {
               </nav>
 
               <Button asChild size="block" className="mt-6 font-semibold">
-                <Link href="/contact" onClick={() => setMenuOpen(false)}>
+                <a href="#pricing" onClick={() => setMenuOpen(false)}>
                   Get Started
-                </Link>
+                </a>
               </Button>
             </SheetContent>
           </Sheet>
