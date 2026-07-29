@@ -17,25 +17,25 @@
  * WHAT THIS PRIMITIVE EXISTS TO GET RIGHT, beyond styling: the page behind it.
  *
  * Radix locks the page scroll while a modal is open, which is what we want, and
- * it does it by setting `overflow: hidden` on the body. That removes the
- * scrollbar, which is ~15px of layout on Windows, so it compensates by adding
- * an equal `padding-right` to the body. In-flow content therefore does not
- * move. FIXED content is not in the body's flow and gets no such compensation,
- * so anything pinned to the right edge of the viewport jumps by the width of
- * the scrollbar the instant a dialog opens, and jumps back when it closes.
- * This page has exactly that: ScrollProgress is `fixed inset-x-0`.
+ * it does it by setting `overflow: hidden` on the body. That removes the page's
+ * scrollbar, so opening a dialog made the whole site's scrollbar blink out of
+ * existence and closing it brought it back. Radix then adds a `padding-right`
+ * equal to the removed bar so in-flow content does not jump sideways, which
+ * does nothing for `fixed` elements: ScrollProgress is `fixed inset-x-0` and
+ * stretched by that same ~15px on every open.
  *
- * react-remove-scroll (which radix uses) publishes two hooks for this, and they
- * only carry rules while a lock is active, so they are inert the rest of the
- * time:
+ * Both symptoms are one cause, and it is fixed in globals.css rather than here,
+ * because it is the ROOT element that has to change: `html` carries
+ * `overflow-y: scroll` so the scrollbar is permanently rendered and the
+ * viewport scrolls the root rather than the body, and radix's compensation is
+ * then neutralised as a lock that removes nothing needs no padding to make up
+ * for it. See the comments on those two rules; the ordering and specificity
+ * traps around them are not obvious and cost real time once already.
  *
- *   right-scroll-bar-position  ->  right: <scrollbar>px
- *   width-before-scroll-bar    ->  margin-right: <scrollbar>px
- *
- * They are exported here under readable names rather than left as string
- * literals at the call site, because `right-scroll-bar-position` in a Tailwind
- * class list reads exactly like a typo and will eventually be "cleaned up" by
- * someone who has not read this comment.
+ * The lock itself is untouched and still complete: Lenis is stopped (see
+ * setPageScrollLocked), and react-remove-scroll's capture-phase wheel and
+ * touchmove handlers, which are a separate mechanism from its styling, still
+ * refuse any scroll starting outside the panel.
  */
 
 import * as React from "react";
@@ -44,16 +44,6 @@ import { XIcon } from "@phosphor-icons/react/ssr";
 
 import { setPageScrollLocked } from "@/components/ui/smooth-scroll";
 import { cn } from "@/lib/utils";
-
-/**
- * Put on a **fixed** element pinned to the right edge, or spanning the full
- * width, so it holds its position while a dialog has the scrollbar removed.
- * Does nothing when no dialog is open.
- */
-export const LOCK_SAFE_RIGHT = "right-scroll-bar-position";
-
-/** As above, for a fixed element sized against the full viewport width. */
-export const LOCK_SAFE_WIDTH = "width-before-scroll-bar";
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
   /*

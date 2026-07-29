@@ -51,6 +51,72 @@
  */
 html {
   font-family: var(--font-inter-display), var(--font-sans);
+
+  /*
+   * The page scrollbar is ALWAYS rendered, open dialog or not.
+   *
+   * `scroll` rather than the default `auto`, and it is doing two jobs. It keeps
+   * the track present when a dialog removes the page's scrollability, so the
+   * bar does not blink out of existence and back; and it makes the root the
+   * viewport's scroll container, so a dialog setting `overflow: hidden` on the
+   * BODY (which is what radix does) no longer takes the scrollbar with it.
+   *
+   * `scrollbar-gutter: stable` is the usual advice here and is not enough: the
+   * gutter is only reserved while overflow computes to auto or scroll, so the
+   * moment the lock makes it hidden the reservation goes too.
+   */
+  overflow-y: scroll;
+}
+
+/*
+ * The other half: undoing radix's compensation, which is now wrong.
+ *
+ * radix locks the page through react-remove-scroll, which sets
+ * `overflow: hidden` on the body and adds `padding-right` equal to the width of
+ * the scrollbar it just removed, so the content underneath does not jump
+ * sideways. Sound reasoning, and both halves are now wrong for us, because the
+ * rule above means no scrollbar is removed at all. Left alone the padding
+ * shifts the entire page left by ~15px on open and back on close, which is a
+ * bigger version of the very jump it exists to prevent.
+ *
+ * `overflow-y` only, never the `overflow` shorthand: the body carries
+ * `overflow-x: clip` as a bleed guard, and the shorthand would drop it.
+ *
+ * What still holds the page still, with the lock's styling defused: Lenis is
+ * stopped, so nothing is easing the scroll position, and react-remove-scroll's
+ * OTHER half, its capture-phase wheel and touchmove handlers, is untouched and
+ * still refuses any scroll originating outside the panel.
+ */
+/*
+ * `html body[...]`, not `body[...]`, and the extra `html` is the entire reason
+ * this works.
+ *
+ * react-remove-scroll does not ship a stylesheet. It builds this rule as a
+ * string and injects a <style> tag into <head> AT RUNTIME, when the dialog
+ * opens. Its selector is `body[data-scroll-locked]` and its declarations are
+ * already `!important`. An override written with the same selector ties on both
+ * importance and specificity, and a tie is broken by document order, which a
+ * tag appended after the page's stylesheet always wins. So the obvious version
+ * of this rule loses every time, silently, and looks exactly like a rule that
+ * is not being applied.
+ *
+ * Prefixing `html` makes it (0,1,2) against their (0,1,1). Specificity is
+ * compared before source order, so it no longer matters that theirs is injected
+ * later.
+ */
+html body[data-scroll-locked] {
+  overflow-y: visible !important;
+  padding-right: 0 !important;
+  /*
+   * The margin half predates the overflow half: it was written for the mobile
+   * Sheet, which hit the same compensation and shoved the centred hero sideways
+   * on open. Both are the same rule with the same cause, so they live in one
+   * place rather than two that can drift. The custom property is
+   * react-remove-scroll's own published gap width, zeroed so anything reading
+   * it downstream agrees with what actually happened.
+   */
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0px;
 }
 
 /*
@@ -164,8 +230,34 @@ html.lenis body {
   height: auto;
 }
 
+/*
+ * Lenis' own stop styling, DELIBERATELY NEUTERED. Upstream this is
+ * `overflow: clip`, and on this site that rule is a bug.
+ *
+ * `lenis.stop()` is called whenever a dialog opens (see setPageScrollLocked in
+ * smooth-scroll.tsx). Clipping the root's overflow removes the page scrollbar,
+ * so opening a dialog made the whole page's scrollbar vanish and closing it
+ * brought the bar back. That is a visible change to the page BEHIND the panel,
+ * at the exact moment the reader's attention is being moved to the front of it.
+ *
+ * Lenis clips here to stop native scrolling while it is paused. That job is
+ * already covered twice over for our case: radix's scroll lock blocks wheel and
+ * touch outside the panel, and Lenis is not writing scroll positions while it
+ * is stopped. Nothing needs the scrollbar destroyed to achieve it.
+ */
 .lenis:not(.lenis-autoToggle).lenis-stopped {
-  overflow: clip;
+  /*
+   * `overflow-y: scroll`, NOT the `overflow` shorthand, and not `visible`.
+   *
+   * This selector is three classes, so it outranks the single-element `html`
+   * rule above it no matter what that rule says. Any shorthand here therefore
+   * resets overflow-y and silently undoes the permanent scrollbar. `clip`
+   * (Lenis' own value) and `visible` both do it: one removes the bar, the other
+   * lets the root fall back to `auto`, and `auto` means no bar once a dialog
+   * has made the page unscrollable. Restating the same value is what keeps this
+   * from fighting the rule it sits below.
+   */
+  overflow-y: scroll;
 }
 
 .lenis [data-lenis-prevent],
@@ -473,33 +565,6 @@ html.lenis body {
   }
 }
 
-/*
- * The dialog's own scroller carries a full-page screenshot several thousand px
- * tall, so it always has a scrollbar. The platform default is a wide light-grey
- * bar sitting inside a rounded cream panel, which is the one part of this page
- * that would look borrowed from the OS. Narrowed and tinted to the page's ink
- * instead. `scrollbar-width`/`scrollbar-color` cover Firefox, the ::-webkit
- * rules cover Chrome and Safari.
- */
-[data-slot="dialog-scroll"] {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-ink) 22%, transparent)
-    transparent;
-}
-[data-slot="dialog-scroll"]::-webkit-scrollbar {
-  width: 8px;
-}
-[data-slot="dialog-scroll"]::-webkit-scrollbar-track {
-  background: transparent;
-}
-[data-slot="dialog-scroll"]::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--color-ink) 22%, transparent);
-}
-[data-slot="dialog-scroll"]::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--color-ink) 34%, transparent);
-}
-
 @media (prefers-reduced-motion: reduce) {
   [data-slot="sheet-overlay"],
   [data-slot="sheet-content"],
@@ -507,26 +572,6 @@ html.lenis body {
   [data-slot="dialog-content"] {
     animation: none !important;
   }
-}
-
-/*
- * Kill the scroll-lock layout shift.
- *
- * Radix Dialog (the Sheet) locks scroll via react-remove-scroll, which adds
- * `margin-right: <scrollbar>px` to <body> to fill the space where it removed the
- * scrollbar. But the scrollbar here lives on <html> — Lenis is the scroll
- * container — so nothing is actually removed, and that compensating margin only
- * shoves the centred hero sideways the instant the Sheet opens. There is no gap
- * to fill, so cancel it (and the CSS var it derives from).
- *
- * `html body[...]` (not plain `body[...]`) is deliberate: react-remove-scroll
- * injects its rule as a runtime <style> singleton that lands after this file in
- * <head>, so at equal specificity its `!important` would win on source order.
- * The extra element bumps specificity so this override wins regardless.
- */
-html body[data-scroll-locked] {
-  margin-right: 0 !important;
-  --removed-body-scroll-bar-size: 0px;
 }
 
 /*

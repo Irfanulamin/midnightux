@@ -114,6 +114,26 @@ export function useBooking(): BookingContextValue {
  * pattern rejects valid addresses more often than it catches bad ones. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/*
+ * ONE OWNER FOR THE EMAIL POLICY, and it is Cal, not us.
+ *
+ * A blocklist of throwaway domains lived here briefly and was removed, because
+ * duplicating a rule cannot work when the other copy is somebody else's and
+ * changes without telling you. Cal rejects addresses it does not like using
+ * rules we cannot see; any list here is out of date the moment theirs moves,
+ * and it fails in both directions. Too short and it lets through what Cal will
+ * refuse, which is the bug it was meant to fix. Too broad and it refuses a
+ * booking Cal would have accepted, which is worse, because that is a real lead
+ * turned away by us for no reason.
+ *
+ * So the check below stays what it always was: a typo catcher, nothing more.
+ * The reason for the original complaint was never that the block was missing,
+ * it was that the visitor found out about it late and in Cal's words. That is
+ * answered by telling them what the address is FOR, before they type it (see
+ * the hint on the email field), rather than by guessing which addresses Cal
+ * will take.
+ */
+
 /* The three facts that answer "what am I signing up for", in the order the
  * page makes them. Same claims as faq.tsx and the CTA banner. */
 const REASSURANCES = [
@@ -221,24 +241,25 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         ? `${intent.subject}\n\n${message.trim()}`
         : intent.subject,
       /*
-       * The same fact again, as its own field, and the duplication is on
-       * purpose.
+       * NO `package` PREFILL. It was here and it is not coming back without the
+       * booking field existing first.
        *
-       * `notes` is free text at the bottom of an email. A booking question
-       * gives it a label and a row of its own, and more usefully it can be
-       * referenced from the event type's "Event name in calendar" template, so
-       * the calendar entry can read "Complete Website ($699) with Jordan
-       * Ellis" instead of the same generic title for all five CTAs. That is the
-       * difference between seeing which package it is at a glance in Google
-       * Calendar and having to open the event.
+       * The idea was to send the intent as its own labelled booking question so
+       * the event type's "Event name in calendar" template could print it, and
+       * the reasoning was that Cal discards prefill for a field that does not
+       * exist, so it would be inert until the field was created. That is true
+       * of RENDERING and not of the rest of the booking: the event type's title
+       * field is `hidden: true, required: true`, and it is filled from that name
+       * template. Point the template at a variable with nothing behind it and
+       * the required title can resolve to empty, which fails validation on
+       * submit, after the visitor has chosen a slot and pressed Confirm.
        *
-       * It requires a hidden booking question with the slug `package` on the
-       * event type. Cal DISCARDS prefill for a field that does not exist, so
-       * this line is inert until that is created and can never break a booking.
-       * That is exactly why the intent stays in `notes` as well: the field is
-       * the nice-to-have, notes is the guarantee.
+       * The intent still travels in `notes` below, which is a real field on
+       * every Cal event type and needs no setup. If the labelled version is
+       * wanted, create the hidden `package` question in the dashboard FIRST,
+       * then add the prefill and the template together, and book a test slot
+       * before trusting it.
        */
-      package: intent.subject,
       "metadata[intent]": intent.id,
       ...(source ? { "metadata[source]": source } : {}),
       ...(CAL_GUESTS.length ? { guests: CAL_GUESTS } : {}),
@@ -478,6 +499,15 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                           id={`${fieldId}-email`}
                           label="Email"
                           error={showErrors ? emailError : ""}
+                          /*
+                            Says what the address is FOR, before it is typed.
+                            This is the answer to a visitor getting bounced by
+                            Cal's own address check after picking a slot, with
+                            no idea why: rather than trying to predict which
+                            addresses Cal will refuse, tell them there is
+                            something worth receiving at the other end.
+                          */
+                          hint="We send your free draft design here."
                         >
                           <input
                             id={`${fieldId}-email`}
@@ -587,12 +617,22 @@ function Field({
   id,
   label,
   error,
+  hint,
   optional,
   children,
 }: {
   id: string;
   label: string;
   error?: string;
+  /**
+   * Standing note under the field, replaced by `error` when there is one.
+   *
+   * They share the slot rather than stacking, because both are one line of
+   * 13px sitting in the form's gap, and showing them together would push the
+   * second into the next label. Swapping is also the better reading: once the
+   * field is wrong, what it is for stops being the useful thing to say.
+   */
+  hint?: string;
   optional?: boolean;
   children: React.ReactNode;
 }) {
@@ -641,6 +681,10 @@ function Field({
           className="absolute inset-x-0 top-full mt-1.5 text-[13px] leading-snug text-coral"
         >
           {error}
+        </p>
+      ) : hint ? (
+        <p className="absolute inset-x-0 top-full mt-1.5 text-[13px] leading-snug text-ink-muted">
+          {hint}
         </p>
       ) : null}
     </div>
