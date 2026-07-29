@@ -1,7 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowUpRight, CheckCircle } from "@phosphor-icons/react/ssr";
 
+import { BookingTrigger } from "@/components/booking-dialog";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { MaskReveal } from "@/components/ui/text-reveal";
@@ -90,8 +90,14 @@ export function CtaBanner() {
             <p className="mt-1 text-[17px] sm:text-[19px]">
               Successfully Completed 100+ Project
             </p>
-            <Button asChild size="lg" className="group mt-7">
-              <Link href="/contact">
+            {/*
+              Was a <Link href="/contact"> to a route that has never existed.
+              It opens the booking dialog now, which is the thing the button was
+              always promising. BookingTrigger merges the click onto the Button
+              itself, so the pill keeps its own hover and press physics.
+            */}
+            <BookingTrigger intent="general">
+              <Button size="lg" className="group mt-7">
                 Contact Us
                 <ArrowUpRight
                   size={18}
@@ -99,8 +105,8 @@ export function CtaBanner() {
                   aria-hidden
                   className="transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 />
-              </Link>
-            </Button>
+              </Button>
+            </BookingTrigger>
           </div>
         </div>
       </Reveal>

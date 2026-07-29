@@ -1,14 +1,15 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
 import { CheckSquare } from "@phosphor-icons/react/ssr";
 import { motion, useInView, useReducedMotion } from "motion/react";
 
+import { BookingTrigger } from "@/components/booking-dialog";
 import { PopularBadge } from "@/components/popular-badge";
 import { PriceCounter } from "@/components/price-counter";
 import { Button } from "@/components/ui/button";
 import { EASE } from "@/components/ui/motion";
+import type { BookingIntentId } from "@/lib/booking";
 
 export type Plan = {
   name: string;
@@ -22,6 +23,12 @@ export type Plan = {
   badge?: string;
   /** Which side the card converges from. */
   enterFrom: "left" | "right";
+  /**
+   * Which conversation this card's CTA opens. Both buttons read "Get Started",
+   * so without this the studio would have no way to tell a $399 booking from a
+   * $699 one, which is the single most useful thing to know before the call.
+   */
+  intent: BookingIntentId;
 };
 
 
@@ -191,9 +198,9 @@ function PricingCard({ plan, started }: { plan: Plan; started: boolean }) {
         </motion.p>
 
         <motion.div variants={block} className="mt-6 sm:mt-8">
-          <Button asChild size="block">
-            <Link href="/contact">Get Started</Link>
-          </Button>
+          <BookingTrigger intent={plan.intent}>
+            <Button size="block">Get Started</Button>
+          </BookingTrigger>
         </motion.div>
 
         <motion.p

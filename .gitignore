@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the template, which carries no secrets and is the only record of
+# which variables the booking flow needs. Without this exception the blanket
+# .env* above swallows it and a fresh clone has nothing to copy from.
+!.env.example
 
 # vercel
 .vercel

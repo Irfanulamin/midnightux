@@ -121,6 +121,24 @@ html.lenis body {
   pointer-events: none;
 }
 
+/*
+ * ...except the booking calendar, which exists to be clicked.
+ *
+ * The rule above is a blanket ban, and it has to be: an iframe eats the wheel
+ * event and leaves the eased scroll stranded mid-page. But the Cal.com embed in
+ * booking-dialog.tsx is an iframe the reader has to interact with, and under
+ * the ban it renders perfectly and ignores every click, which is the worst
+ * shape a bug can take because nothing about it looks broken.
+ *
+ * Scoped to the one wrapper rather than lifted globally, and safe to be, since
+ * the embed sits inside a modal dialog: the page behind it is scroll-locked by
+ * radix while it is open, so there is no smoothed scroll here for the iframe to
+ * strand. The calendar does its own scrolling internally.
+ */
+.lenis.lenis-smooth [data-booking-embed] iframe {
+  pointer-events: auto;
+}
+
 .lenis.lenis-autoToggle {
   transition-property: overflow;
   transition-duration: 1ms;

@@ -6,6 +6,7 @@ import { List } from "@phosphor-icons/react/ssr";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useRef, useState } from "react";
 
+import { BookingTrigger, useBooking } from "@/components/booking-dialog";
 import { Button } from "@/components/ui/button";
 import { EASE } from "@/components/ui/motion";
 import {
@@ -36,6 +37,8 @@ export function SiteHeader() {
   const [condensed, setCondensed] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  /* Used only by the mobile CTA, which has to sequence against the sheet. */
+  const { openBooking } = useBooking();
   const { scrollY } = useScroll();
   const lastY = useRef(0);
 
@@ -172,23 +175,24 @@ export function SiteHeader() {
             its own now the bar is 71 tall: the height is set so the pill fills
             the bar's 10px inset exactly.
           */}
-          <Button
-            asChild
-            size="sm"
-            /* lg:px-4 is part of keeping the bar on one line - see the nav ul. */
-            className="h-10 font-semibold hover:-translate-y-0.5 sm:h-[51px] sm:px-6 sm:text-[16px] lg:px-4 xl:px-6"
-          >
-            {/*
-              An in-page jump to the CTA banner, so plain <a> and not next/link:
-              Link intercepts a same-page hash and runs its own scroll, which
-              fights Lenis. The delegated listener in SmoothScroll handles it.
-
-              #contact, not #pricing: the label promises a conversation, and
-              pricing is a table of numbers. The banner is where the free draft,
-              the $0 upfront and the Contact Us button actually are.
-            */}
-            <a href="#contact">Get a Free Consultation</a>
-          </Button>
+          {/*
+            This used to be an in-page jump to #contact, on the reasoning that
+            the banner is where the free draft and the $0 upfront are written
+            down. It opens the booking dialog directly now, because the label
+            promises a consultation and the shortest path to one is the point:
+            scrolling someone to a second button that says "Contact Us" is a
+            step that only ever loses people. The banner still carries the
+            reassurance for readers who arrive by scrolling.
+          */}
+          <BookingTrigger intent="consultation">
+            <Button
+              size="sm"
+              /* lg:px-4 is part of keeping the bar on one line - see the nav ul. */
+              className="h-10 font-semibold hover:-translate-y-0.5 sm:h-[51px] sm:px-6 sm:text-[16px] lg:px-4 xl:px-6"
+            >
+              Get a Free Consultation
+            </Button>
+          </BookingTrigger>
 
           {/*
             Mobile nav is the shadcn Sheet (radix Dialog). Controlled rather than
@@ -223,10 +227,29 @@ export function SiteHeader() {
                 </ul>
               </nav>
 
-              <Button asChild size="block" className="mt-6 font-semibold">
-                <a href="#contact" onClick={() => setMenuOpen(false)}>
-                  Get a Free Consultation
-                </a>
+              {/*
+                Not <BookingTrigger>, because the ORDER matters here and the
+                trigger cannot express it.
+
+                This button lives inside the mobile Sheet, which is itself a
+                radix Dialog. Closing one dialog and opening another in the same
+                tick puts two focus managers in a race: the sheet restores focus
+                to the hamburger as it unmounts, and that restore lands AFTER
+                the booking dialog has taken focus, so the trap is left holding
+                nothing and the first Tab escapes into the page behind. Waiting
+                out the sheet's 0.35s exit makes it a sequence instead of a
+                race. The extra 30ms is slack, not superstition: the animation
+                has to have ended before radix will unmount.
+              */}
+              <Button
+                size="block"
+                className="mt-6 font-semibold"
+                onClick={() => {
+                  setMenuOpen(false);
+                  window.setTimeout(() => openBooking("consultation"), 380);
+                }}
+              >
+                Get a Free Consultation
               </Button>
             </SheetContent>
           </Sheet>

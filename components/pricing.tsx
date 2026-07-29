@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { BookingTrigger } from "@/components/booking-dialog";
 import { PricingGrid, type Plan } from "@/components/pricing-card";
 import { SectionIntro } from "@/components/section-intro";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ const plans: Plan[] = [
     tone: "light",
     badge: "Popular",
     enterFrom: "left",
+    intent: "landing-page",
     features: [
       "1 Custom Landing Page",
       "Responsive Development",
@@ -39,6 +39,7 @@ const plans: Plan[] = [
     period: "Onetime",
     tone: "dark",
     enterFrom: "right",
+    intent: "complete-website",
     features: [
       "Up to 5-10 Pages",
       "Responsive Development",
@@ -87,9 +88,11 @@ export function Pricing() {
               create a tailored solution designed specifically for your goals.
             </p>
           </div>
-          <Button asChild className="self-start md:self-auto">
-            <Link href="/contact">Request a Custom Quote</Link>
-          </Button>
+          <BookingTrigger intent="custom-quote">
+            <Button className="self-start md:self-auto">
+              Request a Custom Quote
+            </Button>
+          </BookingTrigger>
         </Reveal>
       </div>
     </section>

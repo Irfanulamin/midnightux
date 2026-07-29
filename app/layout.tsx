@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 
 import { Analytics } from "@/components/analytics";
+import { BookingProvider } from "@/components/booking-dialog";
 import { CampaignTracker } from "@/components/campaign-tracker";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
@@ -140,7 +141,14 @@ export default function RootLayout({
         */}
         <SmoothScroll />
         <ScrollProgress />
-        {children}
+        {/*
+          Every CTA on the page opens one dialog, so the dialog is mounted once
+          here rather than per section. The provider is a client component and
+          `children` is a slot passed through it, which is what lets the page
+          and its sections stay Server Components: only the triggers cross the
+          boundary. See booking-dialog.tsx.
+        */}
+        <BookingProvider>{children}</BookingProvider>
         {/*
           SEM measurement, free tier only (GA4 + utm attribution). Both are
           env-gated and inert until NEXT_PUBLIC_GA_ID is set; CampaignTracker

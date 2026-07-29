@@ -17,6 +17,13 @@ export const hasGoogleTag = Boolean(GA_ID);
 // Internal CTA routes. A click to a conversion route fires a lead; campaign
 // routes get the stored utm/click-id params appended so attribution rides the
 // click even though these routes do not exist yet.
+//
+// NOTE: no CTA points at /contact any more. Every one of them opens the booking
+// dialog instead, so the lead event is fired directly by booking-dialog.tsx at
+// the moment a name and email are submitted, and the campaign params travel
+// with the booking as Cal metadata rather than as query params on a navigation.
+// These arrays are kept because they still cover the routes if they are ever
+// built, but nothing on the page currently matches them.
 export const CONVERSION_ROUTES = ["/contact"];
 export const CAMPAIGN_ROUTES = ["/contact", "/work"];
 
