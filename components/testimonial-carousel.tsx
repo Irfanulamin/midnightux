@@ -145,8 +145,26 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                 Portrait and quote sit flush at md, exactly as in the design.
                 Stacked below that they read as one broken card, so they only
                 close up once they are side by side.
+
+                `h-full` is what makes every slide the same size, and it is only
+                visible on phones. Embla lays the slides out in a flex row, so
+                CarouselItem already stretches to the height of the tallest one:
+                the carousel is as tall as the longest quote no matter which
+                slide is showing. What was missing is that this wrapper did not
+                CLAIM that height, so a short testimonial drew a short white
+                card and left the rest of the slide as empty page. Two quotes of
+                different length therefore produced two visibly different cards
+                in the same box, and advancing between them looked like the
+                design changing size rather than the content changing.
+
+                With the height claimed here, the card below takes the remainder
+                through its own `flex-1` and its `justify-between` pins the name
+                row to the bottom edge, so the footer sits in the same place on
+                every slide. At md this is already true without help, because
+                the 405px portrait is taller than any of the quotes and it is
+                the portrait that sets the row height.
               */}
-              <div className="flex flex-col gap-4 md:flex-row md:gap-1">
+              <div className="flex h-full flex-col gap-4 md:flex-row md:gap-1">
                 {/*
                   ONE box at every width: the design's 287 x 405 portrait.
 
@@ -191,7 +209,36 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                   width={item.width}
                   height={item.height}
                   sizes="405px"
-                  className="mx-auto aspect-[287/405] w-full max-w-[287px] shrink-0 rounded-2xl object-cover object-center md:mx-0 md:aspect-auto md:h-[405px]"
+                  /*
+                    BLACK AND WHITE, because the source photographs are not good
+                    enough to be shown in colour.
+
+                    They are low resolution and inconsistently lit, and the
+                    tells are all chromatic: mismatched white balance between
+                    the three, blotchy skin tone from the compression, and a
+                    different background cast on each one, which is what made
+                    them read as three stock photos rather than three clients of
+                    the same studio. Desaturating removes every one of those at
+                    once. What is left is tone and shape, and the eye is far
+                    more forgiving of a soft grayscale portrait than a soft
+                    colour one, so the same file simply looks better.
+
+                    It also puts the coral rating and the yellow elsewhere on
+                    the page back in charge of the colour, instead of competing
+                    with three faces.
+
+                    The contrast and brightness are small on purpose: 1.12 and
+                    1.04. Desaturating a compressed JPEG flattens it into the
+                    midtones, so a little contrast restores the separation that
+                    made it look like a photograph, but pushing further crushes
+                    the shadows into the block artefacts and sharpens exactly
+                    the noise this is meant to hide. Nudge these if the photos
+                    are replaced; they are tuned to these files, not a rule.
+
+                    No hover-to-colour. It is the obvious move and it undoes the
+                    whole point, since the colour is the problem being solved.
+                  */
+                  className="mx-auto aspect-[287/405] w-full max-w-[287px] shrink-0 rounded-2xl object-cover object-center brightness-[1.04] contrast-[1.12] grayscale md:mx-0 md:aspect-auto md:h-[405px]"
                 />
 
                 <div className="flex flex-1 flex-col justify-between rounded-2xl bg-white p-6 sm:p-8 md:p-11">

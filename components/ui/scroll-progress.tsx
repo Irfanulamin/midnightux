@@ -8,6 +8,8 @@ import {
   useTransform,
 } from "motion/react";
 
+import { LOCK_SAFE_RIGHT } from "@/components/ui/dialog";
+
 /*
  * Reading-progress rule pinned to the top of the viewport.
  *
@@ -50,7 +52,17 @@ export function ScrollProgress() {
     <motion.div
       aria-hidden
       style={{ scaleX: progress, opacity }}
-      className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-yellow-strong"
+      /*
+        LOCK_SAFE_RIGHT is why this does not twitch when a dialog opens.
+        Opening one locks the page scroll, which removes the scrollbar, which
+        hands ~15px of viewport width back. Radix compensates the body for that,
+        but this bar is `fixed` and so is not in the body's flow: it would
+        stretch by the width of the scrollbar at the moment the dialog appears
+        and snap back when it closes. The class pins its right edge where the
+        scrollbar used to be, and carries no rules at all while nothing is
+        locked. See components/ui/dialog.tsx.
+      */
+      className={`fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-yellow-strong ${LOCK_SAFE_RIGHT}`}
     />
   );
 }

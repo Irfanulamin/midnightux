@@ -2,13 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Dialog } from "radix-ui";
 import { gsap } from "gsap";
 import Lenis from "lenis";
 import { motion, useReducedMotion } from "motion/react";
-import { BrowserIcon, XIcon } from "@phosphor-icons/react/ssr";
+import { BrowserIcon } from "@phosphor-icons/react/ssr";
 
 import { Button, ButtonLabel } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { EASE } from "@/components/ui/motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -167,8 +175,8 @@ export function ProjectDialog({ project }: { project: Project }) {
   }, [open, reduce]);
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         {/*
           "Preview" with a browser window.
 
@@ -188,59 +196,39 @@ export function ProjectDialog({ project }: { project: Project }) {
           <ButtonLabel>Preview</ButtonLabel>
           <BrowserIcon weight="bold" className="size-4" />
         </Button>
-      </Dialog.Trigger>
+      </DialogTrigger>
 
-      <Dialog.Portal>
-        <Dialog.Overlay
-          data-slot="dialog-overlay"
-          className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-[2px] data-[state=closed]:animate-[sheet-fade-out_0.3s_cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-[sheet-fade-in_0.4s_cubic-bezier(0.16,1,0.3,1)]"
-        />
+      {/*
+        Sized off the viewport rather than the content: the content is a
+        6000px screenshot and would otherwise define the panel. dvh, not vh,
+        so the mobile address bar cannot push the close button off screen.
+      */}
+      <DialogContent
+        closeLabel={`Close ${project.title}`}
+        className="h-[min(88dvh,900px)] w-[min(92vw,920px)]"
+      >
+        {/* pr-14 is the room the absolutely positioned close button needs. */}
+        <DialogHeader className="px-6 py-5 pr-14 sm:px-8 sm:py-6 sm:pr-16">
+          <div className="min-w-0">
+            <DialogTitle>{project.title}</DialogTitle>
+            <DialogDescription>{project.body}</DialogDescription>
+          </div>
+        </DialogHeader>
 
         {/*
-          Sized off the viewport rather than the content: the content is a
-          6000px screenshot and would otherwise define the panel. dvh, not vh,
-          so the mobile address bar cannot push the close button off screen.
+          The scroller, now <DialogBody>, which carries the three things this
+          needed and used to spell out by hand: `data-lenis-prevent` (Lenis is
+          easing the window behind the panel and would otherwise claim a wheel
+          event over the screenshot), `overscroll-contain` (a flick that reaches
+          the end of the image must not continue into the page), and the site's
+          own scrollbar rather than the operating system's grey slab, which was
+          especially wrong here where the bar sits next to a screenshot of a
+          website we designed.
         */}
-        <Dialog.Content
-          data-slot="dialog-content"
-          className="fixed top-1/2 left-1/2 z-50 flex h-[min(88dvh,900px)] w-[min(92vw,920px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-card bg-cream focus:outline-none data-[state=closed]:animate-[dialog-out_0.25s_cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-[dialog-in_0.45s_cubic-bezier(0.16,1,0.3,1)]"
+        <DialogBody
+          ref={scrollRef}
+          className="px-6 pb-6 sm:px-8 sm:pb-8"
         >
-          <header className="flex shrink-0 items-start gap-6 px-6 py-5 sm:px-8 sm:py-6">
-            <div className="min-w-0">
-              <Dialog.Title className="text-[20px] font-semibold tracking-[-0.01em] text-ink sm:text-[24px]">
-                {project.title}
-              </Dialog.Title>
-              <Dialog.Description className="mt-2 max-w-[62ch] text-[14px] leading-6 text-ink-muted sm:text-[15px]">
-                {project.body}
-              </Dialog.Description>
-            </div>
-
-            <Dialog.Close
-              aria-label={`Close ${project.title}`}
-              className="ml-auto grid size-9 shrink-0 cursor-pointer place-items-center rounded-pill text-ink/70 transition-colors duration-200 hover:bg-ink/5 hover:text-ink focus:outline-none"
-            >
-              <XIcon size={22} aria-hidden />
-            </Dialog.Close>
-          </header>
-
-          {/*
-            The scroller.
-
-            `data-lenis-prevent` is load-bearing: Lenis is easing the window
-            scroll for the whole page and intercepts wheel events, so without
-            it a wheel over this panel scrolls the page underneath the dialog
-            instead of the screenshot inside it. The attribute is Lenis' own
-            opt-out and it checks the event target's ancestors for it.
-
-            overscroll-contain stops a flick that reaches the end of the
-            screenshot from continuing into the page behind.
-          */}
-          <div
-            ref={scrollRef}
-            data-slot="dialog-scroll"
-            data-lenis-prevent
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6 sm:px-8 sm:pb-8"
-          >
             {/*
               relative so the skeleton can sit exactly on the image's box. The
               box exists before the bytes do: next/image writes the intrinsic
@@ -305,9 +293,8 @@ export function ProjectDialog({ project }: { project: Project }) {
               */}
               {!loaded ? <PageSkeleton reduce={!!reduce} /> : null}
             </div>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }

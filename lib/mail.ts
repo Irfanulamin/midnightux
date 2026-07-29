@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import nodemailer, { type Transporter } from "nodemailer";
 
 /*
@@ -151,6 +153,119 @@ function shell(heading: string, body: string): string {
 </body></html>`;
 }
 
+/*
+ * A real calendar invite, built by hand.
+ *
+ * WHY THIS EXISTS. Cal.com invites the host and the visitor to the Google
+ * Calendar event it creates, and on the free plan there is no supported
+ * dashboard field for a standing second attendee. The two ways to add one are
+ * both worse than this: NEXT_PUBLIC_CAL_GUESTS works but compiles the address
+ * into the browser bundle where anything can scrape it, and a Teams plan is
+ * ~$12/user/month against a brief that said no paid services.
+ *
+ * An .ics attachment with METHOD:REQUEST is what an invite actually IS. Gmail
+ * and Outlook both render one as an invitation card with Yes / No / Maybe, and
+ * accepting writes it into the recipient's calendar carrying the Meet link. So
+ * the second attendee gets a genuine calendar entry, and their address never
+ * leaves the server.
+ *
+ * What it does NOT do, and the difference matters: this invites, it does not
+ * schedule. Cal is still only checking one person's availability, so a slot can
+ * be offered at a time the second person is busy. They can decline, and then
+ * the booking has to be moved by hand. The only thing that closes that gap is
+ * Cal's collective scheduling, which needs the paid Teams plan.
+ *
+ * No library. RFC 5545 is a text format and the parts used here are a dozen
+ * fields; a dependency to concatenate strings is not worth the supply chain.
+ * The two rules that are easy to get wrong are both handled below: CRLF line
+ * endings (a bare \n makes strict parsers reject the file) and folding at 75
+ * octets.
+ */
+
+/** Escapes an RFC 5545 TEXT value. Order matters: backslash first. */
+function icsEscape(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+}
+
+/** UTC stamp, `20260812T143000Z`. */
+function icsDate(date: Date): string {
+  return `${date.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
+}
+
+/*
+ * Folds a content line to 75 octets, continuations prefixed with one space.
+ *
+ * Measured in BYTES, not characters, which is the whole reason this is not a
+ * slice at 75: a name with an accent or an emoji in it is multi-byte in UTF-8,
+ * and a line that looks 70 characters long can be well over the limit. The cut
+ * point is walked back until the prefix fits.
+ */
+function icsFold(line: string): string {
+  const out: string[] = [];
+  let rest = line;
+  while (Buffer.byteLength(rest, "utf8") > 75) {
+    let cut = Math.min(75, rest.length);
+    while (cut > 1 && Buffer.byteLength(rest.slice(0, cut), "utf8") > 75) cut--;
+    out.push(rest.slice(0, cut));
+    rest = ` ${rest.slice(cut)}`;
+  }
+  out.push(rest);
+  return out.join("\r\n");
+}
+
+function buildIcs(
+  data: BookingMailData,
+  organizerEmail: string,
+  attendeeEmail: string,
+): string {
+  const start = new Date(data.startTime);
+  const end = data.endTime
+    ? new Date(data.endTime)
+    : // Falls back to the 30 minutes the site's copy promises.
+      new Date(start.getTime() + 30 * 60_000);
+
+  const description = [
+    data.subject,
+    `Booked by ${data.name} (${data.email}).`,
+    data.meetUrl ? `Join: ${data.meetUrl}` : "",
+    data.notes ? `\nWhat they wrote:\n${data.notes}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Midnight Surface//Booking//EN",
+    "CALSCALE:GREGORIAN",
+    // REQUEST, not PUBLISH: PUBLISH is a "here is an event" notice with no
+    // reply, REQUEST is an invitation and is what produces the RSVP buttons.
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    // Cal's booking uid, so a reschedule of the same booking updates the same
+    // calendar entry rather than adding a second one beside it.
+    `UID:${data.uid ?? randomUUID()}@midnight-surface`,
+    `DTSTAMP:${icsDate(new Date())}`,
+    `DTSTART:${icsDate(start)}`,
+    `DTEND:${icsDate(end)}`,
+    `SUMMARY:${icsEscape(`Call with ${data.name} (${data.subject})`)}`,
+    `DESCRIPTION:${icsEscape(description)}`,
+    data.meetUrl ? `LOCATION:${icsEscape(data.meetUrl)}` : "",
+    `ORGANIZER;CN=Midnight Surface:mailto:${organizerEmail}`,
+    `ATTENDEE;CN=${icsEscape(attendeeEmail)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${attendeeEmail}`,
+    "STATUS:CONFIRMED",
+    "SEQUENCE:0",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean);
+
+  return `${lines.map(icsFold).join("\r\n")}\r\n`;
+}
+
 /** A labelled row in the detail block. */
 function row(label: string, value: string): string {
   return `<tr>
@@ -253,60 +368,120 @@ ${data.notes ? `\nWhat they wrote:\n${data.notes}\n` : ""}${data.meetUrl ? `\nMe
  * people with two different reasons to be there, and a typo in a list silently
  * drops one of them.
  */
+type SendState = "sent" | "failed" | "skipped";
+
+const SKIPPED = Symbol("skipped");
+
 export async function sendBookingMails(data: BookingMailData): Promise<{
-  visitor: "sent" | "failed" | "skipped";
-  studio: "sent" | "failed" | "skipped";
+  visitor: SendState;
+  owner: SendState;
+  ceo: SendState;
 }> {
   const transport = getTransport();
   if (!transport) {
     console.warn(
       "[mail] SMTP_USER / SMTP_PASS are not set, so no booking emails were sent.",
     );
-    return { visitor: "skipped", studio: "skipped" };
+    return { visitor: "skipped", owner: "skipped", ceo: "skipped" };
   }
 
   const from =
     process.env.MAIL_FROM || `Midnight Surface <${process.env.SMTP_USER}>`;
+  const owner = process.env.OWNER_EMAIL;
+  const ceo = process.env.CEO_EMAIL;
 
-  const studioRecipients = [
-    process.env.OWNER_EMAIL,
-    process.env.CEO_EMAIL,
-  ].filter((address): address is string => Boolean(address));
+  /*
+   * THE OWNER AND THE CEO GET SEPARATE MAILS, and only the CEO's carries the
+   * .ics invite.
+   *
+   * They read identically; the difference is what is attached. The owner is the
+   * Cal host, so Google has already created this event on their calendar and
+   * sent them its invite. Attaching ours as well would land a SECOND entry
+   * beside it, because our UID is Cal's booking id and Google's is its own: two
+   * calendar events for one call, out of one booking. The CEO is the one Cal
+   * never invited, so the CEO is the one who needs it.
+   *
+   * When the two addresses are the same person the CEO branch is the one that
+   * runs, since an invite plus a notification beats a notification alone.
+   */
+  const sameInbox = Boolean(owner && ceo && owner === ceo);
 
   const visitor = visitorEmail(data);
   const lead = leadEmail(data);
 
-  const [visitorResult, studioResult] = await Promise.allSettled([
-    transport.sendMail({
-      from,
-      to: data.email,
-      replyTo: studioRecipients[0] || from,
-      subject: visitor.subject,
-      html: visitor.html,
-      text: visitor.text,
-    }),
-    studioRecipients.length
-      ? transport.sendMail({
-          from,
-          to: studioRecipients,
-          // So hitting reply in the inbox answers the lead, not ourselves.
-          replyTo: `${data.name} <${data.email}>`,
-          subject: lead.subject,
-          html: lead.html,
-          text: lead.text,
-        })
-      : Promise.reject(new Error("OWNER_EMAIL / CEO_EMAIL are not set")),
+  const studioMail = {
+    from,
+    // So hitting reply in the inbox answers the lead, not ourselves.
+    replyTo: `${data.name} <${data.email}>`,
+    subject: lead.subject,
+    html: lead.html,
+    text: lead.text,
+  };
+
+  const send = <T,>(task: Promise<T> | typeof SKIPPED) =>
+    task === SKIPPED ? Promise.resolve(SKIPPED) : task;
+
+  /*
+   * `allSettled`, not `all`. These are independent obligations, and the failure
+   * mode of `all` is the one that costs money: a bounce on the visitor's
+   * address would reject the whole thing and take the studio's copies with it,
+   * so a real booking would sit in a calendar with nobody told about it.
+   */
+  const [visitorResult, ownerResult, ceoResult] = await Promise.allSettled([
+    send(
+      transport.sendMail({
+        from,
+        to: data.email,
+        replyTo: owner || ceo || from,
+        subject: visitor.subject,
+        html: visitor.html,
+        text: visitor.text,
+      }),
+    ),
+    send(
+      owner && !sameInbox
+        ? transport.sendMail({ ...studioMail, to: owner })
+        : SKIPPED,
+    ),
+    send(
+      ceo
+        ? transport.sendMail({
+            ...studioMail,
+            to: ceo,
+            /*
+              The attachment that makes this an invitation rather than a note.
+              nodemailer writes it as a text/calendar alternative part, which is
+              what Gmail and Outlook look for before drawing the RSVP card. Sent
+              as an ordinary file attachment it would only be a download.
+            */
+            icalEvent: {
+              method: "REQUEST",
+              filename: "invite.ics",
+              content: buildIcs(
+                data,
+                owner || String(process.env.SMTP_USER),
+                ceo,
+              ),
+            },
+          })
+        : SKIPPED,
+    ),
   ]);
 
-  if (visitorResult.status === "rejected") {
-    console.error("[mail] visitor confirmation failed:", visitorResult.reason);
-  }
-  if (studioResult.status === "rejected") {
-    console.error("[mail] studio notification failed:", studioResult.reason);
-  }
+  const state = (
+    result: PromiseSettledResult<unknown>,
+    label: string,
+  ): SendState => {
+    if (result.status === "rejected") {
+      console.error(`[mail] ${label} failed:`, result.reason);
+      return "failed";
+    }
+    return result.value === SKIPPED ? "skipped" : "sent";
+  };
 
   return {
-    visitor: visitorResult.status === "fulfilled" ? "sent" : "failed",
-    studio: studioResult.status === "fulfilled" ? "sent" : "failed",
+    visitor: state(visitorResult, "visitor confirmation"),
+    owner: state(ownerResult, "owner notification"),
+    ceo: state(ceoResult, "CEO invite"),
   };
 }

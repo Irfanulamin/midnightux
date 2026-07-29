@@ -123,7 +123,7 @@ export function SiteFooter() {
             alt="MidnightUX"
             width={688}
             height={204}
-            className="h-[34px] w-auto self-start sm:h-[42px] md:h-[51px]"
+            className="h-[34px] w-auto self-start sm:h-[42px] md:h-[51px] opacity-50"
           />
 
           <div className="min-w-0 flex-1">

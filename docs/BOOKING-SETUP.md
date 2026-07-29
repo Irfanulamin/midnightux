@@ -25,24 +25,28 @@ setup onto your own server later without touching this codebase: only
 
 ---
 
-## What I need from you
+## What is actually required
 
-Nine values. Everything else has a working default.
+**Two values.** Everything else is optional or has a working default.
 
 | # | Value | Where it comes from | Goes in |
 |---|-------|--------------------|---------|
 | 1 | Cal.com username + event slug | Step 1 below | `NEXT_PUBLIC_CAL_LINK` |
-| 2 | Webhook secret | You generate it, step 4 | `CAL_WEBHOOK_SECRET` |
-| 3 | Gmail address that sends mail | Yours | `SMTP_USER`, `MAIL_FROM` |
-| 4 | Gmail app password | Step 5 below | `SMTP_PASS` |
-| 5 | Your email (gets leads) | Yours | `OWNER_EMAIL` |
-| 6 | CEO email (gets leads) | Theirs | `CEO_EMAIL` |
-| 7 | Your timezone | e.g. `Asia/Dhaka` | `OWNER_TIMEZONE` |
-| 8 | Production URL | e.g. `https://midnightsurface.com` | Used in step 4 |
-| 9 | Which Google account owns the calendar | Yours | Connected in step 2 |
+| 2 | Which Google account owns the calendar | Yours | Connected in step 2 |
 
-Until these exist the site still builds and runs. The dialog opens, the form
-validates, and step 2 shows Cal's "event type not found" until #1 is real.
+That is the whole booking flow. Cal.com and Google do all the sending between
+them: Cal emails the visitor a confirmation, Google emails every attendee the
+invite with the Meet link.
+
+Optional on top of that:
+
+| Value | What it adds | Goes in |
+|---|---|---|
+| A second attendee's email | Puts them on every calendar invite | `NEXT_PUBLIC_CAL_GUESTS` |
+| Webhook secret, Gmail app password, recipient addresses | Branded copies of those emails in the site's own type, plus a lead notification carrying what the visitor wrote, plus an .ics invite for the second attendee sent server-side | Part C |
+
+Until step 1 exists the site still builds and runs. The dialog opens, the form
+validates, and step 2 shows Cal's "event type not found".
 
 ---
 
@@ -80,13 +84,25 @@ delivery path that actually matters; our own email is the branded layer on top.
 
 So both of you are on the calendar event itself, not just in the lead email.
 
-Open the event type -> **Advanced** -> **Add guests / additional attendees**,
-and put the CEO's address there.
+Set `NEXT_PUBLIC_CAL_GUESTS` to their address. They are then copied onto every
+booking as a guest, so Google emails them the invite and it lands on their
+calendar.
 
-Do it here rather than in `NEXT_PUBLIC_CAL_GUESTS`. That env var exists as an
-escape hatch and works, but `NEXT_PUBLIC_` means the address ships inside the
-JavaScript bundle where scrapers can read it. The dashboard adds them
-server-side.
+Check **Advanced -> Add guests** is toggled ON on the event type, or the
+prefill has no field to fill and the guest is silently dropped.
+
+Two things to know:
+
+- **`NEXT_PUBLIC_` ships the address in the browser bundle**, where anyone
+  viewing source can read it. The only ways to avoid that are Cal's paid Teams
+  plan, or Part C, which sends the same person an `.ics` invite from the server
+  with their address never leaving it.
+- **This invites, it does not schedule.** Cal is still only checking one
+  person's availability, so a visitor can book a slot when the guest is busy,
+  and the guest can decline. The only thing that closes that gap is Cal's
+  **collective scheduling**, which shows only times everyone is free, and that
+  is a paid Teams feature (roughly $12 to $15 per user per month). The free
+  plan is single user.
 
 ## Step 4 — Point the webhook at this site
 
@@ -146,14 +162,24 @@ settings and redeploy. `.env.local` is gitignored and never ships.
 2. Fill in a name and a real email you can check, press **Choose a time**.
 3. The Cal booker should appear with those fields already filled and your
    availability showing. Book the earliest slot.
-4. Expect **four** emails:
-   - Google Calendar invite to the visitor address
-   - Google Calendar invite to you (and the CEO, from step 3)
+4. Expect, with only Part A and B set up:
+   - Cal's confirmation to the visitor
+   - Google Calendar invite to the visitor, to you, and to anyone in
+     `NEXT_PUBLIC_CAL_GUESTS`, each carrying the Meet link
+
+   And with Part C set up as well, three more:
    - our branded confirmation to the visitor
-   - our lead email to `OWNER_EMAIL` and `CEO_EMAIL`
+   - our lead notification to `OWNER_EMAIL`
+   - our lead notification to `CEO_EMAIL`, this one carrying an `.ics` invite
+
+   The last two are separate sends on purpose. The owner is the Cal host, so
+   Google already put the event on their calendar; attaching our invite too
+   would create a second entry beside it. The CEO is the one Cal never invited.
+
 5. Cal's **Settings -> Developer -> Webhooks** page logs each delivery and its
-   response. A 200 with `{"mail":{"visitor":"sent","studio":"sent"}}` is the
-   success case.
+   response. A 200 with `{"mail":{"visitor":"sent","owner":"sent","ceo":"sent"}}`
+   is the success case. `"skipped"` means the matching address is unset, which
+   is not an error.
 
 ### If the branded emails do not arrive
 

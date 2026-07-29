@@ -9,17 +9,24 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Dialog, Slot } from "radix-ui";
+import { Slot } from "radix-ui";
 import Cal, { getCalApi } from "@calcom/embed-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CheckCircleIcon,
-  XIcon,
 } from "@phosphor-icons/react/ssr";
 
 import { Button, ButtonLabel } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EASE } from "@/components/ui/motion";
 import { getCampaign, gtagEvent, trackLead } from "@/lib/analytics";
 import {
@@ -201,9 +208,37 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     return {
       name: name.trim(),
       email: email.trim(),
+      /*
+       * The intent LEADS the notes, ahead of anything the visitor typed.
+       *
+       * This is the copy that survives no matter how Cal is configured: notes
+       * is a built-in field, so it shows on the booking in the dashboard, in
+       * Cal's own email to the host, and in the description of the Google
+       * Calendar event. Opening the event tells you which button was pressed
+       * without anything having been set up.
+       */
       notes: message.trim()
         ? `${intent.subject}\n\n${message.trim()}`
         : intent.subject,
+      /*
+       * The same fact again, as its own field, and the duplication is on
+       * purpose.
+       *
+       * `notes` is free text at the bottom of an email. A booking question
+       * gives it a label and a row of its own, and more usefully it can be
+       * referenced from the event type's "Event name in calendar" template, so
+       * the calendar entry can read "Complete Website ($699) with Jordan
+       * Ellis" instead of the same generic title for all five CTAs. That is the
+       * difference between seeing which package it is at a glance in Google
+       * Calendar and having to open the event.
+       *
+       * It requires a hidden booking question with the slug `package` on the
+       * event type. Cal DISCARDS prefill for a field that does not exist, so
+       * this line is inert until that is created and can never break a booking.
+       * That is exactly why the intent stays in `notes` as well: the field is
+       * the nice-to-have, notes is the guarantee.
+       */
+      package: intent.subject,
       "metadata[intent]": intent.id,
       ...(source ? { "metadata[source]": source } : {}),
       ...(CAL_GUESTS.length ? { guests: CAL_GUESTS } : {}),
@@ -234,7 +269,23 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
           light: { "cal-brand": "#1c5a55" },
           dark: { "cal-brand": "#1c5a55" },
         },
-        hideEventTypeDetails: false,
+        /*
+         * Cal's own title / duration / description panel is hidden INSIDE THE
+         * EMBED ONLY, and the event type still carries all three for the
+         * standalone cal.com page.
+         *
+         * Two reasons. It duplicates: this dialog has already given the reader
+         * a heading and a blurb written for the specific button they pressed,
+         * so Cal's generic version of the same pitch appears directly beneath a
+         * better-targeted one. And it costs width the month view needs, since
+         * that panel sits to the left of the calendar inside a panel that is
+         * only 900px wide to begin with.
+         *
+         * Nothing is lost. Anyone arriving at the Cal link directly, rather
+         * than through a CTA, gets the full description as normal, which is why
+         * it is still worth writing well.
+         */
+        hideEventTypeDetails: true,
         layout: "month_view",
       });
     })();
@@ -260,13 +311,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     <BookingContext.Provider value={value}>
       {children}
 
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay
-            data-slot="dialog-overlay"
-            className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-[2px] data-[state=closed]:animate-[sheet-fade-out_0.3s_cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-[sheet-fade-in_0.4s_cubic-bezier(0.16,1,0.3,1)]"
-          />
-
+      <Dialog open={open} onOpenChange={setOpen}>
           {/*
             ONE SIZE FOR BOTH STEPS, on purpose.
 
@@ -281,12 +326,19 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             dvh rather than vh so the mobile address bar cannot push the close
             button off the top.
           */}
-          <Dialog.Content
-            data-slot="dialog-content"
-            aria-describedby={`${fieldId}-blurb`}
-            className="fixed top-1/2 left-1/2 z-50 flex h-[min(90dvh,760px)] w-[min(94vw,900px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-card bg-cream focus:outline-none data-[state=closed]:animate-[dialog-out_0.25s_cubic-bezier(0.16,1,0.3,1)] data-[state=open]:animate-[dialog-in_0.45s_cubic-bezier(0.16,1,0.3,1)]"
+          <DialogContent
+            closeLabel="Close booking"
+            className="h-[min(90dvh,700px)] w-[min(94vw,900px)]"
           >
-            <header className="flex shrink-0 items-start gap-4 px-6 pt-5 pb-4 sm:px-8 sm:pt-6">
+            {/*
+              pt matches the pb on the step below it (24 / 28 at sm), so the
+              panel has the same air above the title as under the last control.
+              The pb here is the gap to the content, not an edge, so it is its
+              own smaller number. pr-14 is the room the close button needs: it
+              is positioned absolutely by <DialogContent>, so it is not in this
+              flex row and cannot reserve its own space.
+            */}
+            <DialogHeader className="px-6 pt-6 pr-14 pb-5 sm:px-8 sm:pt-7 sm:pr-16">
               {/*
                 The back arrow occupies its slot only on step two. Rendering it
                 conditionally rather than hiding it would shift the title left
@@ -304,146 +356,184 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
               ) : null}
 
               <div className="min-w-0">
-                <Dialog.Title className="text-[20px] font-semibold tracking-[-0.01em] text-ink sm:text-[24px]">
+                <DialogTitle>
                   {step === 1 ? intent.title : "Pick a time that suits you"}
-                </Dialog.Title>
-                <p
-                  id={`${fieldId}-blurb`}
-                  className="mt-2 max-w-[62ch] text-[14px] leading-6 text-ink-muted sm:text-[15px]"
-                >
+                </DialogTitle>
+                {/*
+                  A real <Dialog.Description>, not a styled <p>: radix wires it
+                  to the panel's aria-describedby itself, which is one less id
+                  to keep in step by hand.
+                */}
+                <DialogDescription>
                   {step === 1
                     ? intent.blurb
                     : `Times are shown in your own timezone. You will get a Google Meet link by email the moment you confirm, ${name.trim().split(" ")[0]}.`}
-                </p>
+                </DialogDescription>
               </div>
+            </DialogHeader>
 
-              <Dialog.Close
-                aria-label="Close booking"
-                className="ml-auto grid size-9 shrink-0 cursor-pointer place-items-center rounded-pill text-ink/70 transition-colors duration-200 hover:bg-ink/5 hover:text-ink focus-visible:ring-2 focus-visible:ring-ink/40 focus:outline-none"
-              >
-                <XIcon size={18} weight="bold" />
-              </Dialog.Close>
-            </header>
-
-            {/*
-              `data-lenis-prevent` for the same reason project-dialog.tsx uses
-              it: Lenis is easing the window behind this panel, and without the
-              attribute a wheel event inside the dialog scrolls the page under
-              it instead of the content in front of you.
-            */}
-            <div
-              data-lenis-prevent
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-            >
+            <DialogBody>
               <AnimatePresence mode="wait" initial={false}>
                 {step === 1 ? (
                   <motion.div
                     key="details"
                     {...stepMotion}
-                    className="grid h-full gap-8 px-6 pb-6 sm:px-8 sm:pb-8 md:grid-cols-[1fr_minmax(0,340px)] md:gap-10"
+                    /*
+                      `min-h-full`, never `h-full`, and the difference is the
+                      whole bug this replaced.
+
+                      `h-full` pins the box to exactly the scroll container's
+                      height, so the bottom padding is drawn at the 100% mark
+                      and any content past it spills OUTSIDE the padded box:
+                      scroll to the end of a tall form and the last field sits
+                      flush against the dialog edge with nothing under it.
+                      `min-h-full` makes full height a floor rather than a
+                      ceiling, so the box grows with its content and the padding
+                      always lands after the last thing in it.
+
+                      It is also what makes `justify-center` safe here. Centring
+                      inside a fixed-height box pushes overflow out of BOTH ends
+                      and the top becomes unreachable, because a scroll
+                      container cannot scroll to negative offsets. With a floor
+                      instead of a ceiling there is never spare space to
+                      distribute once the content is tall, so the centring
+                      quietly becomes a no-op exactly when it would have been
+                      harmful, and short content still sits optically centred
+                      between the header and the foot.
+                    */
+                    className="flex min-h-full flex-col justify-center px-6 pb-6 sm:px-8 sm:pb-7"
                   >
-                    {/*
-                      The column that earns the width. It is not decoration: it
-                      restates the offer at the one moment the reader is being
-                      asked for their address, which is where the hesitation
-                      actually is.
-                    */}
-                    <div className="order-2 flex flex-col justify-center gap-6 rounded-2xl bg-teal p-6 text-white sm:p-7 md:order-1">
-                      <p className="text-[15px] leading-7 text-white/85">
-                        What happens on the call
-                      </p>
-                      <ul className="flex flex-col gap-4">
-                        {REASSURANCES.map((item) => (
-                          <li key={item} className="flex items-start gap-3">
-                            <CheckCircleIcon
-                              size={20}
-                              weight="fill"
-                              aria-hidden
-                              className="mt-0.5 shrink-0 text-yellow"
-                            />
-                            <span className="text-[15px] leading-6 text-white/90">
-                              {item}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="border-t border-white/20 pt-5 text-[14px] leading-6 text-white/70">
-                        Thirty minutes, and you are under no obligation at the
-                        end of it.
-                      </p>
-                    </div>
+                    {/* The grid is a child of the centring flex, not the same
+                        element: one box owns the vertical rhythm, the other the
+                        two columns, and neither has to compromise for the other. */}
+                    <div className="grid gap-8 md:grid-cols-[1fr_minmax(0,340px)] md:gap-10">
+                      {/*
+                        The column that earns the width. It is not decoration: it
+                        restates the offer at the one moment the reader is being
+                        asked for their address, which is where the hesitation
+                        actually is.
+                      */}
+                      <div className="order-2 flex flex-col justify-center gap-6 rounded-2xl bg-teal p-6 text-white sm:p-7 md:order-1">
+                        <p className="text-[15px] leading-7 text-white/85">
+                          What happens on the call
+                        </p>
+                        <ul className="flex flex-col gap-4">
+                          {REASSURANCES.map((item) => (
+                            <li key={item} className="flex items-start gap-3">
+                              <CheckCircleIcon
+                                size={20}
+                                weight="fill"
+                                aria-hidden
+                                className="mt-0.5 shrink-0 text-yellow"
+                              />
+                              <span className="text-[15px] leading-6 text-white/90">
+                                {item}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="border-t border-white/20 pt-5 text-[14px] leading-6 text-white/70">
+                          Thirty minutes, and you are under no obligation at the
+                          end of it.
+                        </p>
+                      </div>
 
-                    <form
-                      onSubmit={handleSubmit}
-                      noValidate
-                      className="order-1 flex flex-col justify-center gap-5 md:order-2"
-                    >
-                      <Field
-                        id={`${fieldId}-name`}
-                        label="Your name"
-                        error={showErrors ? nameError : ""}
+                      <form
+                        onSubmit={handleSubmit}
+                        noValidate
+                        /*
+                          gap-7, not gap-5: the field errors are absolutely
+                          positioned into this gap (see <Field>), so it is
+                          carrying a line of text that is not in the flow. At 20
+                          it read as cramped the moment a message appeared; 28
+                          holds it with air on both sides and looks deliberate
+                          when there is no error at all.
+                        */
+                        className="order-1 flex flex-col justify-center gap-7 md:order-2"
                       >
-                        <input
+                        <Field
                           id={`${fieldId}-name`}
-                          name="name"
-                          type="text"
-                          autoComplete="name"
-                          value={name}
-                          onChange={(event) => setName(event.target.value)}
-                          placeholder="Jordan Ellis"
-                          className={inputClass(showErrors && !!nameError)}
-                        />
-                      </Field>
+                          label="Your name"
+                          error={showErrors ? nameError : ""}
+                        >
+                          <input
+                            id={`${fieldId}-name`}
+                            name="name"
+                            type="text"
+                            autoComplete="name"
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            aria-invalid={showErrors && !!nameError}
+                            aria-describedby={
+                              showErrors && nameError
+                                ? `${fieldId}-name-error`
+                                : undefined
+                            }
+                            placeholder="Jordan Ellis"
+                            className={inputClass(showErrors && !!nameError)}
+                          />
+                        </Field>
 
-                      <Field
-                        id={`${fieldId}-email`}
-                        label="Email"
-                        error={showErrors ? emailError : ""}
-                      >
-                        <input
+                        <Field
                           id={`${fieldId}-email`}
-                          name="email"
-                          type="email"
-                          inputMode="email"
-                          autoComplete="email"
-                          value={email}
-                          onChange={(event) => setEmail(event.target.value)}
-                          placeholder="jordan@yourbusiness.com"
-                          className={inputClass(showErrors && !!emailError)}
-                        />
-                      </Field>
+                          label="Email"
+                          error={showErrors ? emailError : ""}
+                        >
+                          <input
+                            id={`${fieldId}-email`}
+                            name="email"
+                            type="email"
+                            inputMode="email"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            aria-invalid={showErrors && !!emailError}
+                            aria-describedby={
+                              showErrors && emailError
+                                ? `${fieldId}-email-error`
+                                : undefined
+                            }
+                            placeholder="jordan@yourbusiness.com"
+                            className={inputClass(showErrors && !!emailError)}
+                          />
+                        </Field>
 
-                      <Field
-                        id={`${fieldId}-message`}
-                        label="Anything we should know?"
-                        optional
-                      >
-                        <textarea
+                        <Field
                           id={`${fieldId}-message`}
-                          name="message"
-                          rows={3}
-                          value={message}
-                          onChange={(event) => setMessage(event.target.value)}
-                          placeholder="A sentence about your business is plenty."
-                          className={`${inputClass(false)} resize-none`}
-                        />
-                      </Field>
+                          label="Anything we should know?"
+                          optional
+                        >
+                          <textarea
+                            id={`${fieldId}-message`}
+                            name="message"
+                            rows={3}
+                            value={message}
+                            onChange={(event) => setMessage(event.target.value)}
+                            placeholder="A sentence about your business is plenty."
+                            className={`${inputClass(false)} resize-none`}
+                          />
+                        </Field>
 
-                      <Button type="submit" size="block" className="group mt-1">
-                        <ButtonLabel>Choose a time</ButtonLabel>
-                        <ArrowRightIcon
-                          size={18}
-                          weight="bold"
-                          aria-hidden
-                          className="transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5"
-                        />
-                      </Button>
+                        <Button
+                          type="submit"
+                          size="block"
+                          className="group mt-1"
+                        >
+                          <ButtonLabel>Choose a time</ButtonLabel>
+                          <ArrowRightIcon
+                            size={18}
+                            weight="bold"
+                            aria-hidden
+                            className="transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-0.5"
+                          />
+                        </Button>
 
-                      <p className="text-[13px] leading-5 text-ink-muted">
-                        We use your details for this booking only. No list, no
-                        newsletter.
-                      </p>
-                    </form>
+                        <p className="text-[13px] leading-5 text-ink-muted">
+                          We use your details for this booking only. No list, no
+                          newsletter.
+                        </p>
+                      </form>
+                    </div>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -457,7 +547,14 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                       refuses every click.
                     */
                     data-booking-embed
-                    className="h-full min-h-[520px] px-2 pb-4 sm:px-4 sm:pb-6"
+                    /*
+                      `h-full` is right HERE, unlike on step one: the calendar
+                      is an iframe that scrolls its own contents, so it wants to
+                      fill the visible box exactly rather than grow past it. The
+                      padding matches step one's, so the two steps have the same
+                      margins and the panel does not appear to shift.
+                    */
+                    className="h-full min-h-[520px] px-6 pb-6 sm:px-8 sm:pb-7"
                   >
                     <Cal
                       namespace={CAL_NAMESPACE}
@@ -469,10 +566,9 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+            </DialogBody>
+          </DialogContent>
+      </Dialog>
     </BookingContext.Provider>
   );
 }
@@ -500,8 +596,26 @@ function Field({
   optional?: boolean;
   children: React.ReactNode;
 }) {
+  /*
+    THE ERROR IS TAKEN OUT OF FLOW, so it cannot resize anything.
+
+    In flow it was a row that did not exist until it did. Inside a fixed-height
+    dialog that is not a cosmetic problem: two messages appearing at once added
+    around 44px, which pushed the submit button below the fold and shifted every
+    field the reader was already looking at, at the exact moment they were being
+    told they had made a mistake.
+
+    `absolute top-full` hangs the message under the input in the space the form
+    gap already provides, so it occupies zero flow height and the panel never
+    changes size. The form's `gap-7` is sized for it: 28px holds a 13px line set
+    at `leading-snug` plus its 6px offset, with room to spare, so the message
+    lands cleanly between two fields rather than against the next label.
+
+    `inset-x-0` rather than a left offset, so a long message wraps within the
+    column instead of running out of the panel.
+  */
   return (
-    <div>
+    <div className="relative">
       <label
         htmlFor={id}
         className="mb-2 flex items-baseline gap-2 text-[14px] font-medium text-ink"
@@ -515,11 +629,17 @@ function Field({
       </label>
       {children}
       {/*
-        role="alert" so the message is announced when it appears, and the field
-        is described by it rather than merely followed by it.
+        role="alert" so it is announced the moment it appears rather than
+        waiting for focus to arrive; the input points at it with
+        aria-describedby, since out of flow it is no longer merely the next
+        thing a screen reader would reach.
       */}
       {error ? (
-        <p role="alert" className="mt-2 text-[13px] text-coral">
+        <p
+          id={`${id}-error`}
+          role="alert"
+          className="absolute inset-x-0 top-full mt-1.5 text-[13px] leading-snug text-coral"
+        >
           {error}
         </p>
       ) : null}

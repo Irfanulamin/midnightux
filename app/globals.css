@@ -79,6 +79,66 @@ html {
   }
 }
 
+/*
+ * Scrollbars, in the page's own colours rather than the operating system's.
+ *
+ * A default Windows scrollbar is a grey slab against a cream page, and inside
+ * the dialog it is the one surface on the whole site that did not get designed.
+ * Two mechanisms, because no single one covers every engine:
+ *
+ *   scrollbar-width / scrollbar-color   the standard properties. Firefox, and
+ *                                       Chrome 121+, and Safari 18.2+.
+ *   ::-webkit-scrollbar                 older WebKit and Blink.
+ *
+ * They overlap rather than conflict: where a browser supports the standard
+ * properties it applies those and ignores the pseudo-elements entirely, so both
+ * paths have to describe the same bar independently. `thin` is the closest the
+ * standard property gets to the 10px the pseudo-element asks for.
+ *
+ * The thumb is the page's ink at low opacity, not a brand colour: it is chrome
+ * for finding your place, and teal or yellow here would compete with the
+ * content for attention every time you scrolled. Transparent track, so the bar
+ * reads as sitting on whatever surface it is over, cream page or cream dialog.
+ */
+html,
+.scrollbar-themed {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(16 16 16 / 0.25) transparent;
+}
+
+html::-webkit-scrollbar,
+.scrollbar-themed::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-track,
+.scrollbar-themed::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/*
+ * The transparent border plus `background-clip: content-box` is what insets the
+ * thumb inside its own track, so it reads as a rounded pill with air around it
+ * instead of a bar wedged against the edge of the panel. Padding does not exist
+ * on scrollbar parts; a border is the only way to buy that space.
+ */
+html::-webkit-scrollbar-thumb,
+.scrollbar-themed::-webkit-scrollbar-thumb {
+  background: rgb(16 16 16 / 0.25);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: var(--radius-pill);
+}
+
+@media (hover: hover) {
+  html::-webkit-scrollbar-thumb:hover,
+  .scrollbar-themed::-webkit-scrollbar-thumb:hover {
+    background: rgb(16 16 16 / 0.45);
+    background-clip: content-box;
+  }
+}
+
 body {
   background: var(--color-surface);
   color: var(--color-ink);

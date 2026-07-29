@@ -27,6 +27,35 @@ const ANCHOR_DURATION = 1.1;
  */
 let activeLenis: Lenis | null = null;
 
+/**
+ * Freezes or releases the page's smooth scroll. Called by the dialog primitive
+ * for as long as a modal is on screen.
+ *
+ * Radix already locks the page when a modal opens, by setting `overflow:
+ * hidden` on the body and blocking wheel and touch events outside the panel.
+ * That is enough on an ordinary page and it is NOT enough here, because Lenis
+ * does not scroll the page by letting a wheel event through. It listens for the
+ * gesture, cancels it, and then eases `window.scrollTo` toward a target of its
+ * own on every ticker frame. A programmatic scroll is not a wheel event and
+ * nothing about the body's overflow stops one, so any easing still in flight
+ * when the dialog opened kept running underneath it, and a gesture that reached
+ * Lenis before the blocker did could start a new one. The page drifted behind
+ * the panel exactly as if it had never been locked.
+ *
+ * `stop()` ends that at the source: Lenis stops reading input and stops writing
+ * scroll positions. Radix keeps doing its half, which is what still covers
+ * native scrolling. `start()` resumes at wherever the page actually is, so
+ * closing a dialog never jumps.
+ *
+ * A no-op when Lenis is not running, which includes every reader with reduced
+ * motion turned on. They are on the native scroll, which Radix locks properly.
+ */
+export function setPageScrollLocked(locked: boolean): void {
+  if (!activeLenis) return;
+  if (locked) activeLenis.stop();
+  else activeLenis.start();
+}
+
 /*
  * Global smooth scroll.
  *
