@@ -99,9 +99,35 @@ export function getBookingIntent(id: BookingIntentId): BookingIntent {
  * so nothing has to be recompiled to move the event type.
  */
 export function calLinkFor(intent: BookingIntent): string {
-  return (
-    intent.eventType ??
-    process.env.NEXT_PUBLIC_CAL_LINK ??
-    "midnight-surface/30min"
-  );
+  const link = intent.eventType ?? process.env.NEXT_PUBLIC_CAL_LINK;
+
+  /*
+   * NO SILENT FALLBACK. This used to return a hardcoded
+   * "midnight-surface/30min" when the variable was missing, and that placeholder
+   * is not a real event type, so the embed loaded it, got a 404 from Cal and
+   * rendered "Error Code: 404. Cal Link seems to be wrong."
+   *
+   * Which is a genuinely misleading thing to be told. The link Cal is
+   * complaining about is not the one in your .env.local, it is one nobody
+   * configured, so the obvious next move is to go and check a Cal link that was
+   * fine all along. It cost an hour once already.
+   *
+   * The usual cause is not a wrong value but a stale build: NEXT_PUBLIC_* is
+   * inlined at compile time, so editing .env.local without restarting leaves
+   * the old bundle in place, and an empty variable then looks exactly like a
+   * broken Cal account. Naming that here is the whole point.
+   */
+  if (!link) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[booking] NEXT_PUBLIC_CAL_LINK is not set, so the booker cannot load.\n" +
+          "  Set it in .env.local as `username/event-type`, then RESTART the dev\n" +
+          "  server. NEXT_PUBLIC_* values are compiled in, so a running server\n" +
+          "  will not pick up an edit to the file.",
+      );
+    }
+    return "";
+  }
+
+  return link;
 }
