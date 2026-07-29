@@ -18,18 +18,37 @@ import { Reveal } from "@/components/ui/reveal";
  * pronouns follow it; the per-entry comments record the original wording so the
  * edit stays auditable against what the client actually said.
  *
- * Both photos are 1000x1000, where the previous exports were portraits at
- * 0.645 / 0.733 / 0.778. That is an improvement rather than a problem: the
- * carousel frames every slide in the design's 287 x 405 box with object-cover,
- * so identical square sources mean identical geometry and an identical crop on
- * both slides, which is exactly what the three mismatched aspects used to
- * break. The cover crop takes ~29% off the width, centred - which also removes
- * the rounded corners baked into the alysa source, so they never reach screen.
+ * BOTH PHOTOS ARE CROPPED IN THE ASSET, not by object-cover, and that is the
+ * fix for them reading as low quality.
+ *
+ * They were 1000x1000 squares that the carousel centre-cropped into the
+ * design's 287 x 405 box. Identical squares did guarantee identical geometry
+ * on both slides, which was the point at the time, but a centre crop is a rule
+ * applied to two photographs that were framed nothing alike. Alysa's is a
+ * proper head-and-shoulders portrait and survived it. Adm's is a wide candid of
+ * him working, so a centre crop kept the whole room and left his face at maybe
+ * a tenth of the frame: a soft photograph shown at 287 x 405 with the subject
+ * that small has almost no real detail anywhere the eye actually looks, and no
+ * filter fixes that, because the problem is not colour, it is that the
+ * information is not there at the size it is being asked for.
+ *
+ * So each is now cropped to the subject by hand and stored at exactly 287:405
+ * (574 x 810, a 2x render of the box). Two things follow. object-cover has
+ * nothing left to crop, so the framing is decided here rather than emerging
+ * from an aspect-ratio accident, and `sizes` in the carousel drops to the
+ * width of the box because the covered size and the box are now the same
+ * thing. Anything replacing these has to be cropped the same way; shipping a
+ * square again re-opens both.
  *
  * WebP, and sharpened. The supplied PNGs were soft, and a light unsharp mask
- * (sigma 1.2) recovers most of it at this render size. Sharpening makes PNG
+ * (sigma ~1.1) recovers most of it at this render size. Sharpening makes PNG
  * bigger, not smaller - it doubled them to ~1.5MB each - so they are stored as
- * quality-92 WebP instead: visually identical, 65KB apiece.
+ * quality-92 WebP instead: visually identical, ~55KB apiece. The alysa source
+ * is flattened onto white first, since it carries alpha with rounded corners
+ * baked in that must not reach the screen.
+ *
+ * The uncropped full-frame versions are in git history if a different framing
+ * is ever wanted.
  */
 const testimonials: Testimonial[] = [
   {
@@ -45,8 +64,8 @@ const testimonials: Testimonial[] = [
     quote:
       "MidnightUX is the best, hands down one of the best at what they do.",
     image: "/testimonial/adm.webp",
-    width: 1000,
-    height: 1000,
+    width: 574,
+    height: 810,
   },
   {
     name: "Alysa",
@@ -63,8 +82,8 @@ const testimonials: Testimonial[] = [
     quote:
       "It was a wonderful experience working with MidnightUX. They're incredibly talented and patient and know what they are doing. I highly recommend them to anyone looking for great UX designs.",
     image: "/testimonial/alysa.webp",
-    width: 1000,
-    height: 1000,
+    width: 574,
+    height: 810,
   },
 ];
 

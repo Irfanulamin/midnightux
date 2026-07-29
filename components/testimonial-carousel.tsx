@@ -135,10 +135,33 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
       >
         {/*
           The generated CarouselContent carries a negative margin to pair with
-          per-item padding. There is one slide across at every width here, so
-          the gutter is zeroed rather than fought.
+          per-item padding. That pattern is zeroed here and the spacing is a
+          flex `gap` instead, which is not the usual advice and is the right
+          call at one slide per view.
+
+          The negative-margin/padding pair makes each slide a full-width box
+          with the gutter cut OUT of it, so the card is narrower than the
+          viewport by the gutter and sits against the left edge with a strip of
+          cream stranded on the right. Fine when three slides are visible and
+          that strip is the next card. Wrong here, where it is just a card that
+          no longer lines up with the section.
+
+          A `gap` adds the space BETWEEN the slides instead of inside them, so
+          every card stays exactly viewport-wide at rest and the 16px only
+          exists while the carousel is moving, which is the moment it is needed:
+          without it the outgoing and incoming cards travel as one continuous
+          white band and the advance reads as the text swapping rather than a
+          card being replaced. Embla is fine with it, and this is worth knowing
+          because its docs steer you to the margin pattern: it measures spacing
+          as the distance between consecutive slide start edges
+          (`measureWithGaps`), which picks up a flex gap exactly as it picks up
+          a margin, in loop mode too.
+
+          Deliberately wider than the 4px between the portrait and the quote
+          card inside a slide, so the two gaps cannot be read as the same kind
+          of seam.
         */}
-        <CarouselContent className="ml-0">
+        <CarouselContent className="ml-0 gap-4">
           {items.map((item, i) => (
             <CarouselItem key={item.name} className="pl-0">
               {/*
@@ -186,60 +209,73 @@ export function TestimonialCarousel({ items }: { items: Testimonial[] }) {
                   explicit for the same reason -- with it absent the browser assumes
                   100vw and picks candidates for a box far wider than this ever is.
 
-                  `sizes` is 405, NOT the 287 of the box, and the difference is
-                  the whole reason these looked soft.
+                  `sizes` is 287, the width of the box, and it is only allowed to
+                  be that because the ASSETS are now cut to 287:405 (see
+                  testimonials.tsx). It was 405 while they were squares, and the
+                  arithmetic is worth keeping because it is the trap here:
+                  `sizes` describes how much image data is needed, and under
+                  object-cover that is the COVERED size rather than the box. A
+                  1:1 source in a 287 x 405 box is scaled to the box HEIGHT, so
+                  it renders 405 wide and is cropped back to 287, and asking for
+                  287 under-requests by ~41%. Now that the source aspect and the
+                  box aspect are the same, cover scales to the width and the two
+                  numbers finally agree.
 
-                  `sizes` has to describe how much image data is needed, and
-                  under object-cover that is the COVERED size, not the box. The
-                  portraits this was written for were taller than 287/405, so
-                  cover scaled them to the box width and 287 was right. The
-                  photos are 1:1 now, so cover scales them to the box HEIGHT:
-                  they render 405 x 405 and get cropped to 287 wide. Asking for
-                  287 therefore under-requests by ~41%, and on a 2x screen the
-                  browser picked a 640px candidate to fill an 810px render and
-                  upscaled it. 405 makes it choose 828 instead.
-
-                  Anything replacing these photos should re-check this number:
-                  it is a function of the source's aspect against 287/405, not
-                  a constant.
+                  So this is a function of the source's aspect against 287/405,
+                  not a constant. Ship a differently shaped photo and it has to
+                  be recomputed, which is the second reason the crop belongs in
+                  the asset: it keeps the answer at 287.
                 */}
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  width={item.width}
-                  height={item.height}
-                  sizes="405px"
-                  /*
-                    BLACK AND WHITE, because the source photographs are not good
-                    enough to be shown in colour.
+                {/*
+                  The box is now a wrapper rather than the <img> itself, because
+                  the grain has to be a LAYER over the photograph (see
+                  .photo-grain in globals.css). It cannot be a filter on the
+                  image: CSS has no grain filter, and the two things that come
+                  closest, contrast and saturate, are what was already tried
+                  here and what the whole comment below is about giving up on.
 
-                    They are low resolution and inconsistently lit, and the
-                    tells are all chromatic: mismatched white balance between
-                    the three, blotchy skin tone from the compression, and a
-                    different background cast on each one, which is what made
-                    them read as three stock photos rather than three clients of
-                    the same studio. Desaturating removes every one of those at
-                    once. What is left is tone and shape, and the eye is far
-                    more forgiving of a soft grayscale portrait than a soft
-                    colour one, so the same file simply looks better.
+                  Every box class stayed on this element and only object-fit
+                  moved down, so the geometry is unchanged. `overflow-hidden` is
+                  new and required: the grain layer is inset-0 on a rounded box,
+                  so without it the texture squares off the corners the photo
+                  rounds.
+                */}
+                <div className="photo-duotone photo-grain mx-auto aspect-[287/405] w-full max-w-[287px] shrink-0 overflow-hidden rounded-2xl md:mx-0 md:aspect-auto md:h-[405px]">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    width={item.width}
+                    height={item.height}
+                    sizes="287px"
+                    /*
+                      NOTHING ON THE IMAGE. It carries fit and position only, and
+                      every part of the treatment lives on the wrapper: the
+                      duotone needs the image to blend with a background it does
+                      not own, and the grain needs to sit on top of the result.
+                      The desaturate is applied there too (.photo-duotone img),
+                      as step one of that sandwich rather than as a look in its
+                      own right.
 
-                    It also puts the coral rating and the yellow elsewhere on
-                    the page back in charge of the colour, instead of competing
-                    with three faces.
+                      Worth recording that plain grayscale was tried here first,
+                      and on its own it is the wrong tool. It removes the
+                      chromatic tells, which is real, but it also flattens a
+                      soft photograph into the midtones and leaves it looking
+                      exactly as low resolution as it is, only duller: the
+                      complaint that started all of this was made about the
+                      black and white version.
 
-                    The contrast and brightness are small on purpose: 1.12 and
-                    1.04. Desaturating a compressed JPEG flattens it into the
-                    midtones, so a little contrast restores the separation that
-                    made it look like a photograph, but pushing further crushes
-                    the shadows into the block artefacts and sharpens exactly
-                    the noise this is meant to hide. Nudge these if the photos
-                    are replaced; they are tuned to these files, not a rule.
-
-                    No hover-to-colour. It is the obvious move and it undoes the
-                    whole point, since the colour is the problem being solved.
-                  */
-                  className="mx-auto aspect-[287/405] w-full max-w-[287px] shrink-0 rounded-2xl object-cover object-center brightness-[1.04] contrast-[1.12] grayscale md:mx-0 md:aspect-auto md:h-[405px]"
-                />
+                      What actually changed it was three things in order, and
+                      none of them is a filter setting: crop to the subject so
+                      the pixels are spent on a face rather than a room (see
+                      testimonials.tsx), grain so the remaining softness reads
+                      as film rather than as interpolation, and only then a
+                      duotone so the whole thing reads as a treatment. Reach for
+                      that order if these are ever replaced, rather than for the
+                      opacity dials.
+                    */
+                    className="h-full w-full object-cover object-center"
+                  />
+                </div>
 
                 <div className="flex flex-1 flex-col justify-between rounded-2xl bg-white p-6 sm:p-8 md:p-11">
                   <div>

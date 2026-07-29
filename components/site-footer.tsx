@@ -98,7 +98,7 @@ export function SiteFooter() {
             aria-hidden
             width={5680}
             height={3532}
-            className="w-full"
+            className="w-full opacity-60"
           />
         </Reveal>
 
@@ -123,7 +123,7 @@ export function SiteFooter() {
             alt="MidnightUX"
             width={688}
             height={204}
-            className="h-[34px] w-auto self-start sm:h-[42px] md:h-[51px] opacity-50"
+            className="h-[34px] w-auto self-start sm:h-[42px] md:h-[51px]"
           />
 
           <div className="min-w-0 flex-1">
@@ -190,7 +190,7 @@ export function SiteFooter() {
                 </div>
               </div>
 
-              <p className="w-full self-end text-[13px] tracking-[-0.02em] text-surface/80 sm:ml-auto sm:w-auto sm:text-[14px]">
+              <p className="w-full self-end text-[13px] tracking-[-0.02em] text-white sm:ml-auto sm:w-auto sm:text-[14px]">
                 &copy; {new Date().getFullYear()} {SITE_NAME}. All rights
                 reserved.
               </p>
