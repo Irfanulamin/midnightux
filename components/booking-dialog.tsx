@@ -578,20 +578,59 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                     */
                     data-booking-embed
                     /*
-                      `h-full` is right HERE, unlike on step one: the calendar
-                      is an iframe that scrolls its own contents, so it wants to
-                      fill the visible box exactly rather than grow past it. The
-                      padding matches step one's, so the two steps have the same
-                      margins and the panel does not appear to shift.
+                      `min-h-full`, the same floor-not-ceiling as step one, and
+                      for a sharper reason: THE CAL EMBED DOES NOT SCROLL ITSELF.
+
+                      It looks like it should. It is an iframe, iframes scroll.
+                      But Cal's embed runs the opposite way round: the booker
+                      measures its own content and posts the height out
+                      (`__dimensionChanged`), and embed.js writes that number
+                      straight onto the iframe as `style.height` in px. The
+                      iframe is therefore always exactly as tall as its content
+                      and has nothing left over to scroll. Sizing it to the
+                      panel is not a constraint it respects, it is a guess about
+                      a number Cal owns.
+
+                      Which is fine at 1440, where the month view comes in under
+                      the panel height, and broken on a phone: the narrow booker
+                      drops to its stacked layout and puts the slot list BELOW
+                      the calendar, so picking a day roughly doubles the
+                      reported height. Under the old `h-full` + `overflow-hidden`
+                      that arrived as a hard clip, the times rendered off the
+                      bottom of a box that could not scroll and no scrollbar
+                      anywhere to say so. You could see the calendar and not the
+                      thing the calendar is for.
+
+                      So the embed is allowed its own height and <DialogBody>
+                      does the scrolling, which is the shape Cal is built for:
+                      its `__scrollByDistance` message walks up the ancestors
+                      for the first `overflow-y: auto` box that actually
+                      overflows and scrolls THAT, so the slots are brought into
+                      view for free once this box is the one that gives.
+
+                      Do not put `flex-1` on the <Cal> wrapper to make it fill a
+                      short panel. `overflow-hidden` (there for the rounded
+                      corners) drops a flex item's automatic minimum size to
+                      zero, so the item would cap at the space available and
+                      clip the taller content again, which is this bug wearing a
+                      different hat.
+
+                      The padding matches step one's, so the two steps have the
+                      same margins and the panel does not appear to shift.
                     */
-                    className="h-full min-h-[520px] px-6 pb-6 sm:px-8 sm:pb-7"
+                    className="min-h-full px-6 pb-6 sm:px-8 sm:pb-7"
                   >
                     <Cal
                       namespace={CAL_NAMESPACE}
                       calLink={calLinkFor(intent)}
                       config={calConfig}
-                      className="h-full w-full overflow-hidden rounded-2xl"
-                      style={{ height: "100%", width: "100%" }}
+                      /*
+                        `min-h`, not `h`: a floor so the box is not a sliver
+                        while the iframe boots (embed.js only writes a height
+                        once the booker has rendered), and no ceiling, so the
+                        stacked mobile layout can push past it.
+                      */
+                      className="min-h-[520px] w-full overflow-hidden rounded-2xl"
                     />
                   </motion.div>
                 )}

@@ -285,7 +285,11 @@ html.lenis body {
  * Scoped to the one wrapper rather than lifted globally, and safe to be, since
  * the embed sits inside a modal dialog: the page behind it is scroll-locked by
  * radix while it is open, so there is no smoothed scroll here for the iframe to
- * strand. The calendar does its own scrolling internally.
+ * strand.
+ *
+ * Note the calendar does NOT scroll itself: Cal sizes the iframe to its own
+ * content, so a drag inside it chains straight out to the dialog's scrolling
+ * body, which is the box that has to give. See booking-dialog.tsx.
  */
 .lenis.lenis-smooth [data-booking-embed] iframe {
   pointer-events: auto;
