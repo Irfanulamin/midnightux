@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { CheckSquare } from "@phosphor-icons/react/ssr";
 import { motion, useInView, useReducedMotion } from "motion/react";
 
@@ -149,9 +150,44 @@ function PricingCard({ plan, started }: { plan: Plan; started: boolean }) {
     >
       <article
         className={`lift relative h-full rounded-2xl p-6 sm:p-8 md:p-10 ${
-          dark ? "bg-teal-deep text-white" : "bg-cream"
+          dark
+            ? "isolate overflow-hidden bg-teal-deep text-white"
+            : "bg-cream"
         }`}
       >
+        {/*
+          The Figma rules the dark card with a faint grid — 92 x 80 CSS px
+          cells at roughly 8% light teal, measured off this 4x export (369 x
+          320 px cells across 2208 x 3100). It is on the dark card only
+          because that is the only place it reads: the same overlay on cream
+          is invisible.
+
+          It has to sit above the teal fill and below every child. `isolate`
+          on the article gives the negative z-index somewhere to resolve, so
+          the grid lands between the two without wrapping the card body in
+          another positioned div (which is what the CTA banner does, having
+          no radius to protect). The article's `overflow-hidden` is what keeps
+          it inside the corner radius.
+
+          `object-cover` rather than a stretch, for the reason the CTA banner
+          gives: the card's aspect moves with the viewport and with the copy,
+          and scaling the artwork proportionally keeps the cells square where
+          filling would shear them into diamonds. At the design size the card
+          is 552 x 775, which is this export's aspect exactly, so the spacing
+          lands as drawn.
+        */}
+        {dark ? (
+          <Image
+            src="/design/price-grid.png"
+            alt=""
+            aria-hidden
+            width={2208}
+            height={3100}
+            sizes="(min-width: 768px) 568px, 100vw"
+            className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover"
+          />
+        ) : null}
+
         {plan.badge ? <PopularBadge>{plan.badge}</PopularBadge> : null}
 
         <motion.h3
