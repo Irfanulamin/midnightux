@@ -18,16 +18,16 @@ import { Reveal } from "@/components/ui/reveal";
  * pronouns follow it; the per-entry comments record the original wording so the
  * edit stays auditable against what the client actually said.
  *
- * BOTH PHOTOS ARE CROPPED IN THE ASSET, not by object-cover, and that is the
+ * EVERY PHOTO IS CROPPED IN THE ASSET, not by object-cover, and that is the
  * fix for them reading as low quality.
  *
- * They were 1000x1000 squares that the carousel centre-cropped into the
- * design's 287 x 405 box. Identical squares did guarantee identical geometry
- * on both slides, which was the point at the time, but a centre crop is a rule
- * applied to two photographs that were framed nothing alike. Alysa's is a
- * proper head-and-shoulders portrait and survived it. Adm's is a wide candid of
- * him working, so a centre crop kept the whole room and left his face at maybe
- * a tenth of the frame: a soft photograph shown at 287 x 405 with the subject
+ * They arrive as 1000x1000 squares that the carousel would centre-crop into the
+ * design's 287 x 405 box. Identical squares do guarantee identical geometry on
+ * every slide, which was the point at the time, but a centre crop is a rule
+ * applied to photographs that were framed nothing alike. Alysa's is a proper
+ * head-and-shoulders portrait and survived it. Adm's is a wide candid of him
+ * working, so a centre crop kept the whole room and left his face at maybe a
+ * tenth of the frame: a soft photograph shown at 287 x 405 with the subject
  * that small has almost no real detail anywhere the eye actually looks, and no
  * filter fixes that, because the problem is not colour, it is that the
  * information is not there at the size it is being asked for.
@@ -43,9 +43,17 @@ import { Reveal } from "@/components/ui/reveal";
  * WebP, and sharpened. The supplied PNGs were soft, and a light unsharp mask
  * (sigma ~1.1) recovers most of it at this render size. Sharpening makes PNG
  * bigger, not smaller - it doubled them to ~1.5MB each - so they are stored as
- * quality-92 WebP instead: visually identical, ~55KB apiece. The alysa source
+ * quality-92 WebP instead: visually identical, 33-55KB apiece. The alysa source
  * is flattened onto white first, since it carries alpha with rounded corners
- * baked in that must not reach the screen.
+ * baked in that must not reach the screen; vik's PNG declares an alpha channel
+ * too but every pixel in it is opaque, so that one is simply dropped.
+ *
+ * Vik's crop is the same recipe with one number moved: 708 x 1000 (the tallest
+ * 287:405 window a 1000px-square source holds) taken at x=170 rather than the
+ * centre 146, because his head sits a little right of the frame's middle and a
+ * true centre crop left him visibly off-axis in a portrait that is nearly all
+ * face. Full height is kept, so the head lands in the top half exactly as it
+ * does on the other two slides and the three cards read as one set.
  *
  * The uncropped full-frame versions are in git history if a different framing
  * is ever wanted.
@@ -82,6 +90,24 @@ const testimonials: Testimonial[] = [
     quote:
       "It was a wonderful experience working with MidnightUX. They're incredibly talented and patient and know what they are doing. I highly recommend them to anyone looking for great UX designs.",
     image: "/testimonial/alysa.webp",
+    width: 574,
+    height: 810,
+  },
+  {
+    name: "Vik",
+    role: "Founder, Kape Capital Financial",
+    rating: "10/10",
+    /*
+     * Given verbatim as "Kazi is great to work with and it was easy to
+     * communicate. He delivered quality designs. I would work with him again."
+     * Same treatment as the two above: the studio is the subject, so Kazi
+     * becomes MidnightUX and the pronouns follow it, he/him to they/them. No
+     * verb has to move here - "delivered" is past tense, which reads the same
+     * for both.
+     */
+    quote:
+      "MidnightUX is great to work with and it was easy to communicate. They delivered quality designs. I would work with them again.",
+    image: "/testimonial/vik.webp",
     width: 574,
     height: 810,
   },
