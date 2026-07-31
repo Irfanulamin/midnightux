@@ -33,7 +33,19 @@ const navLinks = [
 ];
 
 
-export function SiteHeader() {
+/*
+ * `hrefBase` exists because these links are bare hashes, and a bare hash only
+ * means anything on the page that owns those sections.
+ *
+ * On "/" it stays "", so the delegated Lenis listener in <SmoothScroll> matches
+ * `a[href^="#"]` and eases the jump. On a standalone route (the legal pages)
+ * the same links would resolve to nothing at all and every nav item would be a
+ * dead click, so those pages pass "/" and get real cross-page navigation back
+ * to the section. Not `next/link` even then: the target is a hash on another
+ * route, and letting the browser do a plain navigation is what lets
+ * <SmoothScroll>'s own hash handling take over cleanly on arrival.
+ */
+export function SiteHeader({ hrefBase = "" }: { hrefBase?: string }) {
   const [condensed, setCondensed] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -146,7 +158,7 @@ export function SiteHeader() {
           {navLinks.map((link) => (
             <li key={link.href}>
               <a
-                href={link.href}
+                href={`${hrefBase}${link.href}`}
                 /*
                  * 18px, measured: the Figma's five labels are 50 / 107 / 79 /
                  * 58 / 129 wide, which only Inter Display at 18 sets. The 15px
@@ -216,7 +228,7 @@ export function SiteHeader() {
                   {navLinks.map((link) => (
                     <li key={link.href}>
                       <a
-                        href={link.href}
+                        href={`${hrefBase}${link.href}`}
                         onClick={() => setMenuOpen(false)}
                         className="block rounded-xl px-4 py-3.5 text-[17px] text-ink/85 transition-colors duration-200 hover:bg-cream hover:text-ink"
                       >

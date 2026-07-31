@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { Reveal } from "@/components/ui/reveal";
 import { SITE_NAME } from "@/lib/site";
@@ -44,7 +45,17 @@ const socials = [
   { label: "Telegram", href: "#", Icon: TelegramLogoIcon },
 ];
 
-export function SiteFooter() {
+/*
+ * Real routes, unlike everything above them, so these are the one place in the
+ * footer that uses next/link: there is no Lenis fight to avoid because they are
+ * not same-page hashes, and prefetching a document this long is worth having.
+ */
+const legalLinks = [
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Terms of Service", href: "/terms-of-service" },
+];
+
+export function SiteFooter({ hrefBase = "" }: { hrefBase?: string }) {
   return (
     <footer className="px-2.5 pb-2.5">
       {/*
@@ -158,11 +169,29 @@ export function SiteFooter() {
                   {footerLinks.map((link) => (
                     <li key={link.href}>
                       <a
-                        href={link.href}
+                        href={`${hrefBase}${link.href}`}
                         className="text-[17px] tracking-[-0.02em] text-surface transition-colors duration-300 hover:text-yellow sm:text-[18px]"
                       >
                         {link.label}
                       </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              <nav aria-label="Legal">
+                <p className="text-[15px] font-semibold tracking-[0.05em] text-yellow sm:text-[16px]">
+                  LEGAL
+                </p>
+                <ul className="mt-4 flex flex-col gap-3">
+                  {legalLinks.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-[17px] tracking-[-0.02em] text-surface transition-colors duration-300 hover:text-yellow sm:text-[18px]"
+                      >
+                        {link.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>

@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "Data Privacy Compliance": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/enterprise-communication/data-privacy-compliance/SKILL.md",
+      "computedHash": "146751418c73c0a06026fb7c5e9db7229c7c40f4f523631af66f53e5427ccd4c"
+    },
     "brandkit": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
@@ -61,11 +67,23 @@
       "skillPath": "skills/brutalist-skill/SKILL.md",
       "computedHash": "e66e5a2a8b73cef79ab6546459c665e8b983645689c5f3772f7eed8b9f1e8e0e"
     },
+    "legal-response": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "legal/skills/legal-response/SKILL.md",
+      "computedHash": "28ea79e44e396616f6c1b86b9859e98cf44c37ddce65d57c4e42c7ee69aa3335"
+    },
     "minimalist-ui": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "skillPath": "skills/minimalist-skill/SKILL.md",
       "computedHash": "7e88897e0371184e97a82b8d9ef080323c13f21eb067b58ef71eb05173a08ac2"
+    },
+    "privacy-policy": {
+      "source": "phuryn/pm-skills",
+      "sourceType": "github",
+      "skillPath": "pm-toolkit/skills/privacy-policy/SKILL.md",
+      "computedHash": "4f79d99d3bc7d1a14108bbff25d28cce0f86a70d89edb1ef908f30001b176a9c"
     },
     "redesign-existing-projects": {
       "source": "Leonxlnx/taste-skill",
