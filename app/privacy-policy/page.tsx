@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
       a dead click.
     */
     <div className="flex min-h-[100dvh] flex-col bg-surface">
-      <SiteHeader hrefBase="/" />
+      <SiteHeader hrefBase="/" retract="desktop-only" />
       <main className="flex-1">
         <LegalDoc
           title="Privacy Policy"

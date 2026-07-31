@@ -45,7 +45,27 @@ const navLinks = [
  * route, and letting the browser do a plain navigation is what lets
  * <SmoothScroll>'s own hash handling take over cleanly on arrival.
  */
-export function SiteHeader({ hrefBase = "" }: { hrefBase?: string }) {
+export function SiteHeader({
+  hrefBase = "",
+  retract = "always",
+}: {
+  hrefBase?: string;
+  /**
+   * Whether the bar slides away while you scroll down.
+   *
+   * `"always"` is the marketing page, where the bar is the only fixed chrome
+   * and getting it out of the way buys back the whole viewport.
+   *
+   * `"desktop-only"` keeps it put below `lg`, and the legal pages use it. Their
+   * table-of-contents bar is pinned at a fixed offset measured FROM the header
+   * (`top-4` plus `--header-bar`), so it cannot travel with a bar that
+   * retracts: the header leaves and the TOC stays behind, floating over an
+   * empty strip where the header used to be. Two pieces of chrome stacked at
+   * fixed offsets have to agree about whether they are on screen, and the
+   * cheapest way to make them agree on a phone is for neither to move.
+   */
+  retract?: "always" | "desktop-only";
+}) {
   const [condensed, setCondensed] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,6 +91,24 @@ export function SiteHeader({ hrefBase = "" }: { hrefBase?: string }) {
 
     // Always present at the top, where there is nothing to get out of the way of.
     if (y < 80) {
+      setHidden(false);
+      return;
+    }
+
+    /*
+     * Read at event time rather than held in state: this is an event handler,
+     * not render, so matchMedia here costs nothing and needs no subscription.
+     * It also means a resize past `lg` is picked up on the very next scroll
+     * frame without a listener of its own.
+     *
+     * `setHidden(false)` rather than a bare return, so rotating a phone to
+     * landscape while the bar happens to be parked off screen brings it back
+     * instead of stranding it.
+     */
+    if (
+      retract === "desktop-only" &&
+      !window.matchMedia("(min-width: 1024px)").matches
+    ) {
       setHidden(false);
       return;
     }
