@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { ConsentSettingsButton } from "@/components/consent-banner";
 import { Reveal } from "@/components/ui/reveal";
+import { hasGoogleTag } from "@/lib/analytics";
 import { SITE_NAME } from "@/lib/site";
 import { ArrowUpRightIcon, WhatsappLogoIcon, TelegramLogoIcon } from "@phosphor-icons/react/ssr";
 
@@ -194,6 +196,24 @@ export function SiteFooter({ hrefBase = "" }: { hrefBase?: string }) {
                       </Link>
                     </li>
                   ))}
+                  {/*
+                    The withdrawal route the privacy policy promises in section
+                    05, where consent is said to be withdrawable "as easy as
+                    giving it". That is GDPR Article 7(3), so it needs an actual
+                    control, and section 12 names this one by its label. It
+                    reopens the same two-button banner rather than opening a
+                    preferences panel, because the banner already carries both
+                    answers.
+
+                    Gated on `hasGoogleTag` so the footer never offers a control
+                    over a tag that is not loaded, and so the <li> does not
+                    render empty when NEXT_PUBLIC_GA_ID is unset.
+                  */}
+                  {hasGoogleTag && (
+                    <li>
+                      <ConsentSettingsButton className="cursor-pointer text-[17px] tracking-[-0.02em] text-surface transition-colors duration-300 hover:text-yellow sm:text-[18px]" />
+                    </li>
+                  )}
                 </ul>
               </nav>
 

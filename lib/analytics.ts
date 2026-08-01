@@ -54,17 +54,42 @@ declare global {
 }
 
 /*
- * Consent Mode v2 default: analytics denied until a banner grants it;
- * functionality/security stay granted. This is the privacy-first default — with
- * it, GA runs in cookieless "consent mode" rather than setting cookies on the
- * first pageview. Wire a consent UI to `gtag('consent','update',{...})` to flip
- * `analytics_storage` to granted.
+ * Consent Mode v2 default: everything that stores for analytics or advertising
+ * is denied until the banner grants it; functionality/security stay granted
+ * because the site cannot work or stay secure without them.
+ *
+ * THE THREE AD SIGNALS ARE NOT OPTIONAL PADDING. Consent Mode "v2" is defined
+ * by `ad_user_data` and `ad_personalization`; a default call that omits them is
+ * v1 with a v2 label on it. They matter here even with no ad tags running,
+ * because gtag treats any consent type you do not name as GRANTED. Naming only
+ * `analytics_storage` therefore denied the one signal we were thinking about
+ * and silently granted the three we were not.
+ *
+ * `wait_for_update` is deliberately absent. The stored choice is read
+ * synchronously out of localStorage inside the gtag-init script itself (see
+ * analytics.tsx), before `config()` fires, so there is no async CMP round trip
+ * for GA to wait on and the very first ping already carries the right state.
  */
 export const CONSENT_DEFAULT = {
   analytics_storage: "denied",
+  ad_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
   functionality_storage: "granted",
   security_storage: "granted",
 } as const;
+
+/*
+ * Where the visitor's answer to the banner lives.
+ *
+ * localStorage, not sessionStorage, and this is the one place on the site that
+ * makes that trade deliberately: a consent decision that evaporates when the
+ * tab closes means re-asking on every visit, which is its own dark pattern. It
+ * holds exactly one string, "granted" or "denied", and nothing identifying.
+ */
+export const CONSENT_KEY = "ms_consent";
+
+export type ConsentChoice = "granted" | "denied";
 
 // ---- campaign (utm / click-id) capture ----------------------------------
 

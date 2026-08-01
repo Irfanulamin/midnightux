@@ -13,11 +13,18 @@ import type { LegalSection } from "@/components/legal/legal-doc";
  *      currently unmet. The markdown remains the working copy; this file is the
  *      published one. Keep them in step by hand when the policy changes.
  *
- *   2. Unfilled values render as <code> chips, not as prose. The registered
- *      name, licence number, address and the two Article 27 representatives do
- *      not exist yet. A placeholder set in body type reads as real text and
- *      ships silently; a cream monospace chip does not. Anything still in a
- *      chip on launch day is a bug.
+ *   2. Unfilled values render as <code> chips, not as prose. A placeholder set
+ *      in body type reads as real text and ships silently; a cream monospace
+ *      chip does not. Anything still in a chip on launch day is a bug. The two
+ *      founders' legal names in section 01 are the remaining ones.
+ *
+ *      NOTE that a chip is for a value that WILL exist and is merely unfilled.
+ *      A claim about something that does not exist at all gets deleted instead,
+ *      not chipped: the EU and UK Article 27 representatives, the recorded
+ *      balancing test, the Transfer Impact Assessment, US cold email, telephone
+ *      marketing and two of the security measures were all removed outright
+ *      rather than parked behind a placeholder. Each deletion carries a comment
+ *      at its old site saying what would have to become true to restore it.
  *
  * The markdown's tables are set here as <dl>. A table needs horizontal
  * scrolling on a phone the moment a cell holds a sentence, and these cells hold
@@ -34,7 +41,12 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
       <>
         <dl>
           <dt>Data controller</dt>
-          <dd>MidnightUX</dd>
+          <dd>
+            MidnightUX is a trading name, not a registered company. The
+            controller is <code>founder one, full legal name</code> and{" "}
+            <code>founder two, full legal name</code>, trading as MidnightUX.
+            Until a company is registered, they contract with you personally.
+          </dd>
           <dt>Country of establishment</dt>
           <dd>Bangladesh</dd>
           <dt>Contact for everything</dt>
@@ -171,7 +183,9 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           profile of you.
         </p>
         <p>
-          <strong>We do not load analytics until you consent.</strong> See Cookies
+          <strong>Analytics storage is denied until you consent.</strong> The
+          Google tag loads with storage switched off and runs cookieless, and it
+          is not granted storage unless you accept on the banner. See Cookies
           and analytics.
         </p>
 
@@ -325,8 +339,9 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
         <p>
           We rely on <strong>legitimate interests</strong> (GDPR Article 6(1)(f))
           to identify businesses that may want a website and to make a first,
-          relevant, business-to-business approach. We have carried out a balancing
-          test and recorded it. The factors that keep the balance in favour of
+          relevant, business-to-business approach. We rely on legitimate
+          interests here and will explain our reasoning on request. The factors
+          that keep the balance in favour of
           processing are that the data is business data published by the business,
           the volume per person is minimal, we do not profile individuals, and we
           make stopping trivially easy.
@@ -351,7 +366,6 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           <li>
             Email <a href="mailto:hello@midnightux.com">hello@midnightux.com</a>.
           </li>
-          <li>Tell us on the phone.</li>
         </ul>
         <p>
           When you opt out we keep the minimum record needed to honour it, which
@@ -434,8 +448,8 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           <dd>Whatever is relevant. Legitimate interests, Article 6(1)(f).</dd>
         </dl>
         <p>
-          Where we rely on legitimate interests, you may ask us for a summary of
-          the balancing test. Where we rely on consent, you may withdraw it at any
+          Where we rely on legitimate interests, you may ask us to explain our
+          reasoning. Where we rely on consent, you may withdraw it at any
           time, and withdrawing it is as easy as giving it. Withdrawal does not
           affect processing that already happened.
         </p>
@@ -487,10 +501,15 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             individual addresses in most member states, and are our default.
           </li>
         </ul>
+        {/*
+          "our address" used to sit in this list. It was the same overclaim as
+          the US CAN-SPAM bullet below: the studio has no published postal
+          address, so a message cannot carry one.
+        */}
         <p>
-          Every message we send to the EEA carries our identity, our address, the
-          reason you are hearing from us, where we got your details, and a working
-          one-click opt-out.
+          Every message we send to the EEA carries our identity, our contact
+          details, the reason you are hearing from us, where we got your
+          details, and a working one-click opt-out.
         </p>
 
         <h3>United Kingdom</h3>
@@ -500,27 +519,27 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           bodies) is permitted with clear identification and an opt-out. Marketing
           email to <strong>sole traders and unincorporated partnerships</strong> is
           treated as marketing to individuals and requires consent or the soft
-          opt-in. We check corporate status before emailing UK contacts, and we
-          screen UK telephone numbers against the Corporate Telephone Preference
-          Service and the Telephone Preference Service before calling.
+          opt-in. We check corporate status before emailing UK contacts.
         </p>
 
+        {/*
+          The Email bullet used to describe how we comply with CAN-SPAM. It
+          could not be true: CAN-SPAM requires a valid physical postal address
+          in every commercial message, and the studio has none to put there.
+          The choice was to publish a real address or to stop claiming the
+          activity. This is the second.
+        */}
         <h3>United States</h3>
         <ul>
           <li>
-            <strong>Email.</strong> The CAN-SPAM Act permits unsolicited commercial
-            email without prior consent, provided headers and subject lines are not
-            deceptive, the message is identifiable as an advertisement, it contains
-            our valid physical postal address, and opt-out requests are honoured
-            within 10 business days. We honour them immediately.
+            <strong>Email.</strong> We do not send unsolicited commercial email
+            to recipients in the United States. The CAN-SPAM Act requires a
+            valid physical postal address in every commercial message, and we do
+            not currently publish one, so we do not run US cold email at all. If
+            that changes, this section changes first.
           </li>
           <li>
-            <strong>Calls.</strong> The TCPA, the National Do Not Call Registry and
-            state equivalents apply. We do not use autodialers, artificial voices or
-            prerecorded messages. We screen against the National DNC Registry and
-            applicable state registries, we call within permitted hours in the
-            recipient&rsquo;s local time, and we identify ourselves at the start of
-            every call.
+            <strong>Calls.</strong> We do not make marketing calls.
           </li>
           <li>
             <strong>Texts.</strong> We do not send marketing SMS.
@@ -533,8 +552,8 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           electronic message. Implied consent may exist where a business address is
           conspicuously published without a statement refusing unsolicited
           messages, and the message is relevant to that person&rsquo;s role. We rely
-          only on that narrow route, we record the basis and the date, and we treat
-          the implied-consent window as expiring on the statutory timetable.
+          only on that narrow route, and we treat the implied-consent window as
+          expiring on the statutory timetable.
         </p>
 
         <h3>Australia</h3>
@@ -575,9 +594,17 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     title: "Who we share data with",
     body: (
       <>
+        {/*
+          Was "each under a written contract that restricts them to our
+          instructions". We use Google's and Cal.com's off-the-shelf terms, not
+          negotiated bespoke agreements, and describing a self-serve signup as a
+          contract we wrote is the kind of claim that only ever gets tested when
+          it matters.
+        */}
         <p>
-          We do not sell personal data. We share it with the following recipients,
-          each under a written contract that restricts them to our instructions.
+          We do not sell personal data. We share it with the following
+          recipients, each under their standard data processing terms or a
+          written contract.
         </p>
         <dl>
           <dt>Cal.com</dt>
@@ -652,7 +679,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           <dd>
             Standard Contractual Clauses (Commission Implementing Decision (EU)
             2021/914), plus the UK International Data Transfer Addendum for UK
-            data, plus a documented Transfer Impact Assessment.
+            data.
           </dd>
           <dt>Us to our processors</dt>
           <dd>
@@ -664,12 +691,16 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             The Article 49(1)(b) derogation, used only where it genuinely applies.
           </dd>
         </dl>
+        {/*
+          "encryption at rest for stored records" was dropped here as well as in
+          Security. It was the same unverifiable blanket claim in both places,
+          and leaving it in one of them would have made the removal cosmetic.
+        */}
         <p>
           Our supplementary measures include encryption in transit (TLS) for all
-          communications, encryption at rest for stored records, access limited to
-          the individuals working on your project, and a commitment to challenge
-          any government access request that appears unlawful and to notify you
-          unless legally prohibited.
+          communications, access limited to the individuals working on your
+          project, and a commitment to challenge any government access request
+          that appears unlawful and to notify you unless legally prohibited.
         </p>
         <p>
           You may request a copy of our Standard Contractual Clauses, with
@@ -886,6 +917,16 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             <code>sessionStorage</code>. Returns you to your place on reload.
             Strictly necessary for the interface to work.
           </dd>
+          <dt>
+            <code>ms_consent</code>
+          </dt>
+          <dd>
+            <code>localStorage</code>, not a cookie. Holds one word, your answer
+            to the analytics banner, so we do not ask again on every visit. It
+            is the one thing here that survives closing the tab, because a
+            consent decision that expires with the session means being asked
+            over and over, which is its own kind of pressure.
+          </dd>
           <dt>Google Analytics 4</dt>
           <dd>
             Cookies and local storage, to understand how the site is used.{" "}
@@ -895,12 +936,18 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
 
         <h3>Consent</h3>
         <p>
-          We use <strong>Google Consent Mode v2</strong> with{" "}
-          <code>analytics_storage</code> set to <strong>denied by default</strong>.
+          We use <strong>Google Consent Mode v2</strong>. Denied by default:{" "}
+          <code>analytics_storage</code>, <code>ad_storage</code>,{" "}
+          <code>ad_user_data</code> and <code>ad_personalization</code>.
           Analytics runs cookieless, or does not run at all, until you grant
-          consent. <code>functionality_storage</code> and{" "}
+          consent on the banner. <code>functionality_storage</code> and{" "}
           <code>security_storage</code> are granted, because the site cannot
           function or stay secure without them.
+        </p>
+        <p>
+          The three advertising signals stay denied whatever you choose, because
+          we run no advertising tags at all. Accepting the banner grants exactly
+          one thing, <code>analytics_storage</code>, and nothing else.
         </p>
         <p>
           Third-party embeds, in particular the <strong>Cal.com</strong> booking
@@ -911,6 +958,11 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
 
         <h3>Your controls</h3>
         <ul>
+          <li>
+            <strong>Cookie settings</strong>, in the footer of every page,
+            reopens the same two-button banner. Withdrawing is the same click as
+            granting.
+          </li>
           <li>Browser settings let you block or delete cookies and clear local storage.</li>
           <li>
             The Google Analytics opt-out browser add-on is at{" "}
@@ -960,17 +1012,28 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             project end.
           </li>
           <li>
-            <strong>Encryption at rest</strong> for stored records.
-          </li>
-          <li>
             <strong>Multi-factor authentication</strong> on our email, hosting,
             repository and registrar accounts.
           </li>
-          <li>
-            <strong>Dependency and vulnerability monitoring</strong> on the
-            codebase.
-          </li>
         </ul>
+        {/*
+          TWO BULLETS WERE REMOVED FROM THIS LIST, and they should only come
+          back alongside the thing that makes them true.
+
+          "Encryption at rest for stored records" was a blanket claim with no
+          store behind it. There is no database in this project; records live in
+          Gmail, in Cal.com and on two laptops. Google encrypts its side, the
+          laptops encrypt only if full-disk encryption is switched on, and the
+          sentence covered all three without evidence for the last.
+
+          "Dependency and vulnerability monitoring on the codebase" was simply
+          false. There is no .github directory, no Dependabot or Renovate
+          config and no CI in this repository, so nothing is watching. Adding a
+          .github/dependabot.yml would take minutes and would earn the bullet
+          back; until then the claim is worse than its absence, because a
+          security section is exactly where a reader is entitled to assume every
+          line was checked.
+        */}
         <p>
           No system is perfectly secure and we do not claim otherwise. If a
           personal data breach occurs and it is likely to result in a risk to your
@@ -1089,9 +1152,10 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           <p>
             This policy is a notice, not a contract. Where the personal data
             concerned relates to individuals in the EEA or the UK, these
-            commitments are captured in a signed{" "}
+            commitments will be captured in a signed{" "}
             <strong>Data Processing Agreement</strong> meeting Article 28(3), with
             Standard Contractual Clauses attached for the transfer to Bangladesh.
+            Ask for one and we will put it in place before the work starts.
           </p>
         </blockquote>
       </>
@@ -1110,6 +1174,13 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           substantively.
         </p>
         <p>You always have the right to go straight to a regulator.</p>
+        {/*
+          The EEA and UK entries each used to end "You may also contact our EU /
+          UK representative." No Article 27 representative has been appointed in
+          either territory, so both sentences pointed a complainant at a person
+          who does not exist. Restore them only when an appointment is actually
+          in place, with the representative's name and address alongside.
+        */}
         <dl>
           <dt>EEA</dt>
           <dd>
@@ -1122,7 +1193,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             >
               edpb.europa.eu
             </a>
-            . You may also contact our EU representative.
+            .
           </dd>
           <dt>United Kingdom</dt>
           <dd>
@@ -1130,7 +1201,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer">
               ico.org.uk
             </a>
-            , helpline 0303 123 1113. You may also contact our UK representative.
+            , helpline 0303 123 1113.
           </dd>
           <dt>California</dt>
           <dd>

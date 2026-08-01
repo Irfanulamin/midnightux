@@ -10,9 +10,10 @@ import type { LegalSection } from "@/components/legal/legal-doc";
  * ship unnoticed. The markdown stays the working copy; this is the published
  * one, and the two are kept in step by hand.
  *
- * The governing-law section is the one place where a chip is genuinely
- * load-bearing: a contract with no named forum is worse than useless, and it is
- * better for it to be visibly unfinished than quietly wrong.
+ * The chips that remain are the two founders' legal names in section 01. They
+ * are the most load-bearing on the page: a contract has to say who is on the
+ * other side of it, and "MidnightUX" is a trading name that cannot be sued or
+ * sue. Better visibly unfinished than quietly wrong.
  */
 
 export const TERMS_SECTIONS: LegalSection[] = [
@@ -23,7 +24,13 @@ export const TERMS_SECTIONS: LegalSection[] = [
       <>
         <dl>
           <dt>Name</dt>
-          <dd>MidnightUX</dd>
+          <dd>
+            MidnightUX is a trading name, not a registered company. Your
+            contract is with <code>founder one, full legal name</code> and{" "}
+            <code>founder two, full legal name</code>, trading as MidnightUX,
+            who are jointly and personally responsible for it until a company is
+            registered and you are told otherwise in writing.
+          </dd>
           <dt>Based in</dt>
           <dd>Bangladesh</dd>
           <dt>Email</dt>
@@ -141,8 +148,9 @@ export const TERMS_SECTIONS: LegalSection[] = [
           </dd>
           <dt>Complete Website, $699 one time</dt>
           <dd>
-            Everything in the Landing Page, plus the additional pages your business
-            needs, for one flat price with no monthly fees.
+            Everything in the Landing Page, including{" "}
+            <strong>two rounds of revisions</strong>, plus the additional pages
+            your business needs, for one flat price with no monthly fees.
           </dd>
         </dl>
         <p>Anything not listed in your Proposal is out of scope.</p>
@@ -254,6 +262,24 @@ export const TERMS_SECTIONS: LegalSection[] = [
           Invoices are payable within <strong>7 days</strong> of issue, and in any
           case before launch or file transfer. We will not withhold a completed
           site for any reason other than non-payment.
+        </p>
+        {/*
+          The clause above already implied this and section 11 already says the
+          rights do not move until payment. Neither said where the work
+          physically sits in the meantime, which is the part that decides what
+          actually happens on the day someone does not pay. Now it says it.
+        */}
+        <p>
+          <strong>
+            Until an invoice is paid in full, the work stays on our own
+            infrastructure.
+          </strong>{" "}
+          We build on our hosting or a staging environment we control. Source
+          files, code and assets are not transferred to you, pushed to your
+          repository, or deployed to your domain until payment clears. You will
+          be able to see and review the work throughout, on a link we give you.
+          This is how <strong>$0 upfront</strong> is possible at all: we carry
+          the whole project on our side until it is paid for.
         </p>
         <p>
           For larger custom projects we may require a deposit or staged payments.
@@ -403,15 +429,26 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: "Revisions and scope",
     body: (
       <>
+        {/*
+          Both packages are named here, not just the Landing Page.
+          "Revision allowances for other packages are stated in your Proposal"
+          used to be the only thing the Complete Website had to fall back on,
+          which left the $699 package with no stated allowance anywhere on the
+          site. Section 04 now says two rounds as well, and the two have to
+          agree.
+        */}
         <h3>Included revisions</h3>
         <p>
-          The Landing Page package includes <strong>two rounds of revisions</strong>
-          . A &ldquo;round&rdquo; means one consolidated set of feedback from you,
-          delivered at once, which we then work through. Piecemeal feedback sent
-          across several days counts as several rounds, so please gather it up
-          before sending.
+          Both standard packages, Landing Page and Complete Website, include{" "}
+          <strong>two rounds of revisions</strong>. A &ldquo;round&rdquo; means
+          one consolidated set of feedback from you, delivered at once, which we
+          then work through. Piecemeal feedback sent across several days counts
+          as several rounds, so please gather it up before sending.
         </p>
-        <p>Revision allowances for other packages are stated in your Proposal.</p>
+        <p>
+          Revision allowances for custom projects outside the two standard
+          packages are stated in your Proposal.
+        </p>
 
         <h3>What counts as a revision, and what counts as new work</h3>
         <dl>

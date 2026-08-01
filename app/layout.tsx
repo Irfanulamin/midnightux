@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Analytics } from "@/components/analytics";
 import { BookingProvider } from "@/components/booking-dialog";
 import { CampaignTracker } from "@/components/campaign-tracker";
+import { ConsentBanner } from "@/components/consent-banner";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
 import {
@@ -156,6 +157,15 @@ export default function RootLayout({
         */}
         <Analytics />
         <CampaignTracker />
+        {/*
+          The consent banner, and the only thing that can ever flip
+          analytics_storage to granted. It renders nothing when
+          NEXT_PUBLIC_GA_ID is unset (no tag to consent to) or when the visitor
+          has already answered. Mounted last so it paints over the page rather
+          than under it, and outside BookingProvider so opening a CTA dialog
+          covers it instead of stacking with it.
+        */}
+        <ConsentBanner />
       </body>
     </html>
   );
