@@ -43,8 +43,8 @@ const footerLinks = [
 ];
 
 const socials = [
-  { label: "WhatsApp", href: "#", Icon: WhatsappLogoIcon },
-  { label: "Telegram", href: "#", Icon: TelegramLogoIcon },
+  /* { label: "WhatsApp", href: "#", Icon: WhatsappLogoIcon }, */
+  { label: "Telegram", href: "https://t.me/Kazi_Mirajul_Islam", Icon: TelegramLogoIcon },
 ];
 
 /*
