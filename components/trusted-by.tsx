@@ -74,11 +74,6 @@ const clients = [
     height: 413,
   },
   {
-    src: "/trusted-logos/createdevs.png",
-    alt: "CreateDevs",
-    width: 544,
-    height: 116,  },
-  {
     src: "/trusted-logos/dev-links.png",
     alt: "Dev Links",
     width: 816,
