@@ -38,7 +38,7 @@ export default function PrivacyPolicyPage() {
       <main className="flex-1">
         <LegalDoc
           title="Privacy Policy"
-          updated="Last updated 1 August 2026"
+          updated="Last updated 27 October 2026"
           sections={PRIVACY_POLICY_SECTIONS}
           intro={
             <p>

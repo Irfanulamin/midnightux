@@ -21,7 +21,7 @@ export default function TermsOfServicePage() {
       <main className="flex-1">
         <LegalDoc
           title="Terms of Service"
-          updated="Last updated 1 August 2026"
+          updated="Last updated 27 October 2026"
           sections={TERMS_SECTIONS}
           intro={
             <p>

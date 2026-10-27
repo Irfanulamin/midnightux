@@ -26,8 +26,8 @@ export const TERMS_SECTIONS: LegalSection[] = [
           <dt>Name</dt>
           <dd>
             MidnightUX is a trading name, not a registered company. Your
-            contract is with <code>founder one, full legal name</code> and{" "}
-            <code>founder two, full legal name</code>, trading as MidnightUX,
+            contract is with <strong>Kazi Mirajul Islam</strong> and{" "}
+            <strong>Irfanul Amin Maruf</strong>, trading as MidnightUX,
             who are jointly and personally responsible for it until a company is
             registered and you are told otherwise in writing.
           </dd>
@@ -77,6 +77,13 @@ export const TERMS_SECTIONS: LegalSection[] = [
             data protection matters only.
           </li>
         </ol>
+        <p>
+          <strong>Partner and agency work.</strong> If you are an agency or other
+          partner engaging us to work for your own clients, that work is covered
+          by a separate written agreement, which sets its own terms, payment
+          timing and, where agreed, governing law. These Terms apply only to the
+          extent that agreement says so.
+        </p>
         <p>
           Nothing said in a call, an email or a chat message varies these Terms
           unless we confirm it in writing and both of us agree.

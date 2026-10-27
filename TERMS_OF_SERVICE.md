@@ -1,7 +1,7 @@
 
 # Terms of Service
 
-**Last updated:** 1 August 2026
+**Last updated:** 27 October 2026
 **Effective from:** [EFFECTIVE DATE]
 
 These Terms govern the website at https://www.midnightux.com and every design

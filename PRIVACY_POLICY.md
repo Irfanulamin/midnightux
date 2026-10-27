@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 1 August 2026
+**Last updated:** 27 October 2026
 **Effective from:** [EFFECTIVE DATE]
 
 MidnightUX ("MidnightUX", "we", "us", "our") designs and builds websites for
@@ -336,10 +336,10 @@ pass the other.
 
 - **Email to a named individual at a business** is treated as email to a natural
   person in several member states and requires **prior consent**.
-- **Germany** requires prior consent for advertising email, including
-  business-to-business, under UWG §7. We do not send cold email to Germany
-  without consent.
-- **Italy** and **Austria** apply similarly strict rules.
+- **Germany**, **Italy** and **Austria** require prior consent for advertising
+  email, including business-to-business (in Germany under UWG §7). We do not
+  send cold email to recipients in those three countries. We email there only
+  when the recipient has asked us to.
 - **France**, the **Netherlands** and several others permit business-to-business
   email to a role or generic business address, where the offer relates to the
   recipient's professional function, with a clear opt-out in every message.
@@ -355,8 +355,7 @@ opt-out.
 Under PECR, unsolicited marketing email to **corporate subscribers** (limited
 companies, LLPs, public bodies) is permitted with clear identification and an
 opt-out. Marketing email to **sole traders and unincorporated partnerships** is
-treated as marketing to individuals and requires consent or the soft opt-in. We
-check corporate status before emailing UK contacts. We screen UK telephone
+treated as marketing to individuals and requires consent or the soft opt-in. We screen UK telephone
 numbers against the **Corporate Telephone Preference Service (CTPS)** and the
 **Telephone Preference Service (TPS)** before calling.
 
@@ -425,7 +424,6 @@ instructions.
 | **Google Analytics 4** | Pseudonymous usage data, only with consent | Processor | US and global |
 | **[HOSTING PROVIDER, e.g. Vercel]** | Request logs, IP addresses | Processor | US / EU |
 | **[PAYMENT PROVIDER, NOT YET CHOSEN]** | Billing name, email, payment instrument | Independent controller | [REGION] |
-| **[ACCOUNTANT / TAX ADVISER]** | Invoices and billing records | Processor or independent controller | Bangladesh |
 | Professional advisers, insurers | Only what a specific matter requires | Independent controllers | Various |
 | Law enforcement, courts, regulators | Only what is legally compelled | Independent controllers | Various |
 

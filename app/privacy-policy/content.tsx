@@ -43,8 +43,8 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           <dt>Data controller</dt>
           <dd>
             MidnightUX is a trading name, not a registered company. The
-            controller is <code>founder one, full legal name</code> and{" "}
-            <code>founder two, full legal name</code>, trading as MidnightUX.
+            controller is <strong>Kazi Mirajul Islam</strong> and{" "}
+            <strong>Irfanul Amin Maruf</strong>, trading as MidnightUX.
             Until a company is registered, they contract with you personally.
           </dd>
           <dt>Country of establishment</dt>
@@ -466,6 +466,12 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           We contact businesses. The rules differ by where the recipient is, and
           we apply the stricter rule when in doubt.
         </p>
+        <p>
+          <strong>
+            Every outreach email we send, wherever it goes, says who we are,
+            where we got your address, and how to opt out.
+          </strong>
+        </p>
 
         <h3>European Union and EEA</h3>
         <p>
@@ -481,13 +487,11 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
             prior consent.
           </li>
           <li>
-            <strong>Germany</strong> requires prior consent for advertising email,
-            including business-to-business, under UWG §7. We do not send cold email
-            to Germany without consent.
-          </li>
-          <li>
-            <strong>Italy</strong> and <strong>Austria</strong> apply similarly
-            strict rules.
+            <strong>Germany</strong>, <strong>Italy</strong> and{" "}
+            <strong>Austria</strong> require prior consent for advertising email,
+            including business-to-business (in Germany under UWG §7). We do not
+            send cold email to recipients in those three countries. We email
+            there only when the recipient has asked us to.
           </li>
           <li>
             <strong>France</strong>, the <strong>Netherlands</strong> and several
@@ -519,7 +523,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           bodies) is permitted with clear identification and an opt-out. Marketing
           email to <strong>sole traders and unincorporated partnerships</strong> is
           treated as marketing to individuals and requires consent or the soft
-          opt-in. We check corporate status before emailing UK contacts.
+          opt-in.
         </p>
 
         {/*
@@ -628,11 +632,6 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
           <dt>Our payment provider</dt>
           <dd>
             Billing name, email and payment instrument. Independent controller.
-          </dd>
-          <dt>Our accountant</dt>
-          <dd>
-            Invoices and billing records. Processor or independent controller.
-            Bangladesh.
           </dd>
           <dt>Professional advisers and insurers</dt>
           <dd>
