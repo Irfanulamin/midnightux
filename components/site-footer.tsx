@@ -5,7 +5,7 @@ import { ConsentSettingsButton } from "@/components/consent-banner";
 import { Reveal } from "@/components/ui/reveal";
 import { hasGoogleTag } from "@/lib/analytics";
 import { SITE_NAME } from "@/lib/site";
-import { ArrowUpRightIcon, WhatsappLogoIcon, TelegramLogoIcon } from "@phosphor-icons/react/ssr";
+import { ArrowUpRightIcon, WhatsappLogoIcon, TelegramLogoIcon, InstagramLogoIcon } from "@phosphor-icons/react/ssr";
 
 /*
  * Footer, from the bottom of the Landing Page frame (node 221:8193 + content
@@ -44,6 +44,7 @@ const footerLinks = [
 
 const socials = [
   /* { label: "WhatsApp", href: "#", Icon: WhatsappLogoIcon }, */
+  { label: "Instagram", href: "https://www.instagram.com/midnightux.studio/", Icon: InstagramLogoIcon },
   { label: "Telegram", href: "https://t.me/Kazi_Mirajul_Islam", Icon: TelegramLogoIcon },
 ];
 
